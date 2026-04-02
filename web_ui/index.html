@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>arXiv Lens — Personal research intelligence for arXiv</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="pages.css" />
+  </head>
+  <body class="landing-body">
+    <header class="landing-nav">
+      <a href="index.html" class="brand">
+        <div>arxiv<strong>lens</strong></div>
+      </a>
+      <div class="landing-nav-actions">
+        <a class="link-muted" href="login.html">Log in</a>
+        <a class="btn btn-primary btn-lg" href="register.html">Get started</a>
+      </div>
+    </header>
+
+    <section class="hero">
+      <p class="hero-badge">Powered by LLM agents</p>
+      <h1>Your personal research intelligence layer for arXiv.</h1>
+      <p class="hero-lead">
+        Stop drowning in papers. Set your goal in plain language, let agents scrape and rank new submissions, and read only what matters
+        to you.
+      </p>
+      <div class="hero-cta">
+        <a class="btn btn-primary btn-lg" href="register.html">Get started</a>
+        <a class="btn btn-outline btn-lg" href="feed.html">View demo feed</a>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="how-heading">
+      <h2 id="how-heading" class="section-title">How it works</h2>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">01</div>
+          <h3>Set your goal</h3>
+          <p>Describe what you care about in natural language — topics, methods, or problems you follow.</p>
+        </div>
+        <div class="step">
+          <div class="step-num">02</div>
+          <h3>Agents filter</h3>
+          <p>Daily pipelines pull arXiv categories you choose, score papers, and explain why each one fits.</p>
+        </div>
+        <div class="step">
+          <div class="step-num">03</div>
+          <h3>Read &amp; save</h3>
+          <p>Triage the feed, accept or reject with feedback, build a library with deeper explanations on demand.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section preview-block">
+      <p>See what your daily feed can look like</p>
+      <div class="preview-card-wrap">
+        <article class="paper-card" aria-hidden="true">
+          <div class="score-strip"></div>
+          <div class="card-inner">
+            <span class="score-badge">9.2</span>
+            <div class="meta-row">
+              <span class="tag">cs.AI</span>
+              <span class="meta-id">arxiv:2401.12345</span>
+            </div>
+            <h2 class="paper-title">Retrieval-augmented agents for scientific workflows</h2>
+            <p class="authors">A. Researcher, B. Scholar</p>
+            <div class="agent-block">
+              <strong>Why it fits</strong>
+              Aligns with your stated interest in agent tooling and RAG pipelines for literature review.
+            </div>
+            <p class="abstract" style="-webkit-line-clamp: 2">
+              We propose a modular framework for coupling LLM agents with document stores for hypothesis tracking&hellip;
+            </p>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <footer class="landing-footer">
+      <span>&copy; 2026 arXiv Lens · Mockup</span>
+      <a href="feed.html">Open app</a>
+    </footer>
+  </body>
+</html>
