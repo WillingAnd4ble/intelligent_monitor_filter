@@ -1,0 +1,10 @@
+Task: Initialize the Backend Repository and LangGraph Pipeline.
+
+I have placed the foundational specification documents in this directory. Do not write any code until you have carefully read these files:
+- DATABASE_SPECIFICATION.md
+- API_SPECIFICATION.md
+- AGENT_ARCHITECTURE_SPECIFICATION.md
+- INFRA_DATAFLOW_SPECIFICATION.md
+- ARCHITECTURE_QA_EDGE_CASES.md
+
+Please scaffold a pristine FastAPI project using SQLAlchemy (configured per the .env spec) and Alembic. Set up the Celery + Redis worker configuration as defined in the Dataflow spec. Then, construct the LangGraph nodes mirroring the exact Pydantic I/O contracts established in the AGENT spec. Prioritize establishing the database connection routing, the native tsvector/SPECTER2 integration queries, and async throughput requirements. Let's build incrementally, starting with the base FastAPI environment and Database skeleton!

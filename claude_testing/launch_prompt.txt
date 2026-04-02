@@ -1,0 +1,11 @@
+Task: Build the Pytest Mocking Suite and the Thesis Benchmarking Tool.
+
+I have placed the architectural specifications in this directory. Before generating tests, read these files thoroughly:
+- UNIT_TESTING_SPECIFICATION.md
+- EVALUATION_BENCHMARK_SPECIFICATION.md
+- API_SPECIFICATION.md
+- AGENT_ARCHITECTURE_SPECIFICATION.md
+
+Your goal is to build an impenetrable testing suite to validate our underlying multi-agent setup, ensuring we never pollute production APIs. 
+First, scaffold the pytest-asyncio environment utilizing unittest.mock targeting the FR1-FR18 smoke parameters exactly as defined in the specification.
+Second, construct the `benchmark_pipeline.py` standalone tool utilizing Streamlit. It must load static JSON records array mapped identically to our specs, processing them without Modal.com OCR lag, and chart our quantitative F1, Recall, and Token Cost parameters exactly per the thesis experiment guidelines. Let's begin scaffolding the base Pytest framework first!

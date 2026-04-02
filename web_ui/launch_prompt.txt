@@ -1,0 +1,7 @@
+Task: Construct the Next.js React Dashboard based on API/UI Specifications.
+
+I have placed the required foundational specifications in this directory. Read them before starting:
+- API_SPECIFICATION.md
+- AI_SYSTEM_SPECIFICATION.md
+
+Please initialize a modern Next.js (App Router) project utilizing Tailwind CSS, Lucide Icons, and React Query. You are responsible for recreating the dark-mode aesthetic mapped in the UI specs. Set up the strict Axios interceptors targeting the defined `httpOnly` JWT sessions handling our 401 redirect logic securely. Wire up the Frontend routing endpoints: '/' landing page, '/dashboard' feed interface, and the '/terminal' settings form configured to patch our agent payload natively to the endpoints. Let's initiate the generic Next.js folder components first and establish the fundamental Axios config!
