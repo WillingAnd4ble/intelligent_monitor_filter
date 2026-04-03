@@ -1,0 +1,43 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --stone-50: #fcf9f3;
+  --stone-100: #f5efe4;
+  --stone-200: #e2d9c8;
+  --sage-50: #f4f6f0;
+  --sage-200: #c9cfa8;
+  --sage-500: #6b7c4f;
+  --sage-700: #454f33;
+  --moss: #4d5c32;
+  --moss-light: #eef2e4;
+  --amber-warm: #a67c38;
+  --radius-lg: 16px;
+  --radius-md: 12px;
+  --radius-sm: 8px;
+}
+
+@layer base {
+  body {
+    @apply font-sans text-ink-primary antialiased;
+  }
+}
+
+.explain-md h1,
+.explain-md h2,
+.explain-md h3 {
+  @apply mt-3 font-semibold text-sage-700 first:mt-0;
+}
+
+.explain-md ul {
+  @apply my-2 list-disc pl-5;
+}
+
+.explain-md pre {
+  @apply my-2 overflow-x-auto rounded-md bg-stone-100 p-3 font-mono text-xs text-ink-primary;
+}
+
+.explain-md a {
+  @apply font-medium text-amber-warm underline-offset-2 hover:underline;
+}
