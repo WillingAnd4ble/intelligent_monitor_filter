@@ -1,0 +1,105 @@
+# ========================
+# Environment & Secrets
+# ========================
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.cert
+*.secret
+credentials.*
+secrets.*
+
+# ========================
+# Specification Documents
+# ========================
+*SPECIFICATION*.md
+*_SPEC_*.md
+ARCHITECTURE_QA_EDGE_CASES.md
+
+# ========================
+# AI Tool Context Files
+# ========================
+CLAUDE.md
+SESSION_HANDOVER.md
+SESSION_HANDOFF.md
+current_version_*.md
+launch_prompt.txt
+build_tool_assignments.txt
+specification_distribution.txt
+users_quick_description.md
+
+# ========================
+# Python
+# ========================
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+dist/
+build/
+.venv/
+venv/
+env/
+.eggs/
+*.whl
+
+# ========================
+# Node.js / Next.js
+# ========================
+node_modules/
+.next/
+out/
+.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# ========================
+# Logs
+# ========================
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ========================
+# OS Files
+# ========================
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ========================
+# IDE / Editor
+# ========================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ========================
+# Testing / Coverage
+# ========================
+coverage/
+.coverage
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+
+# ========================
+# Docker
+# ========================
+*.db
+*.sqlite3
+
+# ========================
+# Misc
+# ========================
+.vercel
