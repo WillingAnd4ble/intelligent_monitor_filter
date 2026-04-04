@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Depends, status
-from app.worker.celery_app import trigger_agent_discovery, celery_app
+from sqlalchemy import select
+from app.worker.celery_app import trigger_agent_discovery, trigger_goal_distiller, celery_app
 from app.api.deps import get_current_user
-from app.db.models import User
+from app.db.database import AsyncSessionLocal
+from app.db.models import User, UserSettings
 from app.schemas.api_schemas import PipelineStatusResponse
 
 router = APIRouter()
@@ -10,8 +12,23 @@ router = APIRouter()
 async def trigger_pipeline(user: User = Depends(get_current_user)):
     """
     Hit by Vercel cron or manual UI button.
-    Kicks off the heavy Discovery Celery Queue.
+    Runs GoalDistiller first if distilled_criteria is missing, then kicks off Discovery.
     """
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(
+            select(UserSettings).where(UserSettings.user_id == user.id)
+        )
+        user_settings = result.scalars().first()
+
+    # Chain distiller → discovery on the Celery worker if criteria are missing
+    if user_settings and user_settings.filtering_goal and not user_settings.distilled_criteria:
+        from celery import chain
+        task = chain(
+            trigger_goal_distiller.si(str(user.id)),
+            trigger_agent_discovery.si(str(user.id))
+        ).apply_async()
+        return {"task_id": task.id}
+
     task = trigger_agent_discovery.delay(str(user.id))
     return {"task_id": task.id}
 

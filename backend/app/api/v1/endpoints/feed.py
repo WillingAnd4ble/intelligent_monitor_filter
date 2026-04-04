@@ -89,6 +89,59 @@ async def get_feed_stats(
         recommended_today=recommended
     )
 
+
+@router.get("/stats/debug", response_model=FeedStatsResponse)
+async def get_feed_stats_debug(
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+    target_date: str | None = None,
+    last_days: int | None = None,
+):
+    """Debug stats endpoint. Use ?target_date=2026-04-01 or ?last_days=7"""
+    if target_date:
+        d = date.fromisoformat(target_date)
+        day_start = datetime(d.year, d.month, d.day, tzinfo=timezone.utc)
+        day_end = day_start + timedelta(days=1)
+    elif last_days:
+        day_start = datetime(
+            *(date.today() - timedelta(days=last_days)).timetuple()[:3],
+            tzinfo=timezone.utc,
+        )
+        day_end = datetime(date.today().year, date.today().month, date.today().day, tzinfo=timezone.utc) + timedelta(days=1)
+    else:
+        day_start = datetime(2026, 4, 1, tzinfo=timezone.utc)
+        day_end = day_start + timedelta(days=1)
+
+    scraped_result = await session.execute(
+        select(func.count(Paper.id))
+        .where(Paper.published_at >= day_start)
+        .where(Paper.published_at < day_end)
+    )
+    total_scraped = scraped_result.scalar() or 0
+
+    evaluated_result = await session.execute(
+        select(func.count(UserPaper.id))
+        .where(UserPaper.user_id == user.id)
+        .where(UserPaper.created_at >= day_start)
+        .where(UserPaper.created_at < day_end)
+    )
+    evaluated = evaluated_result.scalar() or 0
+
+    recommended_result = await session.execute(
+        select(func.count(UserPaper.id))
+        .where(UserPaper.user_id == user.id)
+        .where(UserPaper.status == "feed")
+        .where(UserPaper.created_at >= day_start)
+        .where(UserPaper.created_at < day_end)
+    )
+    recommended = recommended_result.scalar() or 0
+
+    return FeedStatsResponse(
+        total_scraped_today=total_scraped,
+        evaluated_by_agent=evaluated,
+        recommended_today=recommended,
+    )
+
 @router.post("/{user_paper_id}/accept", response_model=StatusResponse)
 async def accept_paper(
     user_paper_id: str,

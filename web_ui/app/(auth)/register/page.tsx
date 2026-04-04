@@ -19,7 +19,7 @@ export default function RegisterPage() {
     setPending(true);
     try {
       await register({ email, password });
-      router.push("/dashboard");
+      router.push("/onboarding");
       router.refresh();
     } catch (e) {
       setError(

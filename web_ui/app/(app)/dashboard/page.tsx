@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   acceptPaper,
   getFeed,
@@ -17,7 +17,13 @@ import Link from "next/link";
 export default function DashboardPage() {
   const qc = useQueryClient();
   const { runTrigger } = usePipeline();
+  const [isFirstRun, setIsFirstRun] = useState(false);
   const [rejectId, setRejectId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setIsFirstRun(params.get("first_run") === "true");
+  }, []);
 
   const { data: papers, isLoading, isError, refetch } = useQuery({
     queryKey: ["feed"],
@@ -81,22 +87,38 @@ export default function DashboardPage() {
       )}
 
       {!isLoading && !isError && papers?.length === 0 && (
-        <div className="rounded-lg border border-dashed border-stone-300 bg-white/80 px-6 py-12 text-center">
-          <p className="text-ink-secondary">
-            No papers in your feed yet. Tune your goal in{" "}
-            <Link href="/terminal" className="font-semibold text-amber-warm">
-              Terminal
-            </Link>{" "}
-            or run the pipeline.
-          </p>
-          <button
-            type="button"
-            className="mt-4 rounded-md bg-sage-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-sage-700"
-            onClick={() => void runTrigger()}
-          >
-            Trigger pipeline
-          </button>
-        </div>
+        isFirstRun ? (
+          <div className="rounded-lg border border-sage-200 bg-moss-light px-6 py-10 text-center">
+            <h2 className="text-lg font-semibold text-sage-700">
+              Your first batch is processing
+            </h2>
+            <p className="mx-auto mt-2 max-w-md text-sm text-ink-secondary">
+              We&rsquo;re scanning today&rsquo;s papers against your goals. This
+              usually takes a few minutes. Your feed will appear here once
+              results are ready.
+            </p>
+            <p className="mt-4 text-xs text-ink-muted">
+              Check the status pill in the top bar for real-time progress.
+            </p>
+          </div>
+        ) : (
+          <div className="rounded-lg border border-dashed border-stone-300 bg-white/80 px-6 py-12 text-center">
+            <p className="text-ink-secondary">
+              No papers in your feed yet. Tune your goal in{" "}
+              <Link href="/terminal" className="font-semibold text-amber-warm">
+                Terminal
+              </Link>{" "}
+              or run the pipeline.
+            </p>
+            <button
+              type="button"
+              className="mt-4 rounded-md bg-sage-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-sage-700"
+              onClick={() => void runTrigger()}
+            >
+              Trigger pipeline
+            </button>
+          </div>
+        )
       )}
 
       <div className="flex flex-col gap-7">

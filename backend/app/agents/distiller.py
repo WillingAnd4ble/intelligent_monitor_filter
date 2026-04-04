@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from typing import List
-from langchain_anthropic import ChatAnthropic
+from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from app.core.config import settings
 
@@ -12,10 +12,10 @@ def run_goal_distiller(categories: List[str], topics: List[str], content_interes
     if not filtering_goal and not content_interest:
         return []
         
-    llm = ChatAnthropic(
-        model="claude-3-haiku-20240307",
+    llm = ChatOpenAI(
+        model="gpt-4o-mini",
         temperature=0.0,
-        api_key=settings.ANTHROPIC_API_KEY
+        api_key=settings.OPENAI_API_KEY
     )
     
     structured_llm = llm.with_structured_output(DistilledCriteriaOutput)

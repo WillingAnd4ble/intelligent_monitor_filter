@@ -11,7 +11,7 @@ from app.worker.modal_client import specter2_embed_batch
 logger = logging.getLogger(__name__)
 
 # ArXiv Terms of Use: minimum 3.1 seconds between API requests
-_ARXIV_DELAY_SECONDS = 3.1
+_ARXIV_DELAY_SECONDS = 5
 _last_arxiv_request_time: float = 0.0
 
 def _throttle_arxiv():

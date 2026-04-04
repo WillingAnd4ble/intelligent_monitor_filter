@@ -218,7 +218,7 @@ def trigger_agent_discovery(user_id: str):
 def run_memory_summarizer(user_id: str, new_comment: str):
     """Summarizes accumulated rejection comments into feedback_memory using Claude Haiku."""
     from app.db.models import FeedbackMemory
-    from langchain_anthropic import ChatAnthropic
+    from langchain_openai import ChatOpenAI
     from langchain_core.prompts import ChatPromptTemplate
     from app.agents.schemas import MemoryOutput
     import uuid
@@ -241,10 +241,10 @@ def run_memory_summarizer(user_id: str, new_comment: str):
             memory.rejection_count = (memory.rejection_count or 0) + 1
             existing_feedback = memory.summarized_feedback or ""
 
-            llm = ChatAnthropic(
-                model="claude-3-haiku-20240307",
+            llm = ChatOpenAI(
+                model="gpt-4o-mini",
                 temperature=0.0,
-                api_key=settings.ANTHROPIC_API_KEY
+                api_key=settings.OPENAI_API_KEY
             )
             structured = llm.with_structured_output(MemoryOutput)
 
