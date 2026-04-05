@@ -2,10 +2,12 @@ import asyncio
 import sys
 if sys.platform == 'win32':
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+from contextlib import asynccontextmanager
 from celery import Celery
 from app.core.config import settings
 from app.db.database import AsyncSessionLocal
 from sqlalchemy import select
+
 
 celery_app = Celery(
     "arxiv_worker",
@@ -75,7 +77,7 @@ def trigger_goal_distiller(user_id: str):
                 )
                 settings_obj.distilled_criteria = distilled
                 await session.commit()
-                
+
     asyncio.run(_run())
 
 
@@ -104,7 +106,7 @@ def trigger_agent_discovery(user_id: str):
             cat_query = "+OR+".join(f"cat:{cat}" for cat in categories)
             papers = fetch_arxiv_papers(cat_query, max_results=200)
             await ingest_papers(session, papers)
-            
+
             # 2. Validate user has distilled criteria before running pipeline
             if not user_settings or not user_settings.distilled_criteria:
                 return
@@ -157,9 +159,9 @@ def trigger_agent_discovery(user_id: str):
                     "final_explanation": "",
                     "agent_score": 0.0
                 }
-                
+
                 final_state = langgraph_app.invoke(state_input)
-                
+
                 # 'feed' = show in user feed for review, 'rejected' = agent filtered out
                 # 'accepted' is reserved for user explicit accept action
                 status_val = "rejected"
@@ -167,7 +169,7 @@ def trigger_agent_discovery(user_id: str):
                     status_val = "rejected"
                 elif final_state.get("evaluator_decision") in ("accept", "borderline"):
                     status_val = "feed"
-                
+
                 new_up = UserPaper(
                     user_id=uuid.UUID(user_id),
                     paper_id=cand["id"],
@@ -176,7 +178,7 @@ def trigger_agent_discovery(user_id: str):
                     agent_explanation=final_state.get("final_explanation")
                 )
                 session.add(new_up)
-            
+
             await session.commit()
 
             # 5. Notify user about top-ranked papers (FR17-FR18)
@@ -209,10 +211,133 @@ def trigger_agent_discovery(user_id: str):
                     for up, paper in top_rows
                 ]
                 notify_top_picks(user_obj.email, top_papers_data)
-
         await engine.dispose()
+    asyncio.run(_run())
+
+@celery_app.task(name="library.generate_deep_explanation")
+def generate_deep_explanation(user_paper_id: str, user_id: str):
+    """Generates a deep, PDF-based explanation for an accepted library paper.
+
+    Steps: Marker PDF extraction -> section classification -> LLM deep explanation -> cache.
+    """
+    from app.worker.modal_client import marker_extract_pdf
+    from app.agents.section_classifier import classify_sections
+    from app.db.models import UserSettings, UserPaper, Paper, PaperExplanation
+    from langchain_openai import ChatOpenAI
+    from langchain_core.prompts import ChatPromptTemplate
+    from pydantic import BaseModel, Field
+    import uuid
+    import logging
+
+    logger = logging.getLogger(__name__)
+
+    class DeepExplanationOutput(BaseModel):
+        explanation: str = Field(description="Markdown-formatted deep explanation, 300-600 words")
+
+    async def _run():
+        async with AsyncSessionLocal() as session:
+            # Load user_paper + paper
+            result = await session.execute(
+                select(UserPaper, Paper)
+                .join(Paper, UserPaper.paper_id == Paper.id)
+                .where(UserPaper.id == uuid.UUID(user_paper_id))
+                .where(UserPaper.user_id == uuid.UUID(user_id))
+            )
+            row = result.first()
+            if not row:
+                logger.error(f"UserPaper {user_paper_id} not found for user {user_id}")
+                return
+            user_paper, paper = row
+
+            # Load user settings
+            settings_result = await session.execute(
+                select(UserSettings).where(UserSettings.user_id == uuid.UUID(user_id))
+            )
+            user_settings = settings_result.scalars().first()
+            level = user_settings.library_explanation_level if user_settings else "professional"
+            content_interest = user_settings.content_interest if user_settings else []
+            filtering_goal = user_settings.filtering_goal if user_settings else ""
+
+            # Step 1: Fetch full PDF text via Marker
+            extracted_text = marker_extract_pdf(paper.pdf_url)
+            if not extracted_text:
+                extracted_text = paper.abstract
+
+            # Step 2: Classify and filter sections
+            filtered_text = classify_sections(extracted_text, content_interest or [])
+
+            # Step 3: Generate deep explanation via LLM
+            level_instructions = {
+                "professional": (
+                    "Write for an expert researcher. Use precise technical language, "
+                    "discuss methodology, experimental design, implications, and limitations. "
+                    "Assume domain knowledge."
+                ),
+                "student": (
+                    "Write for a university student. Explain key concepts, define acronyms, "
+                    "relate findings to the broader field, and walk through results step by step."
+                ),
+                "kid": (
+                    "Write in plain language for a curious 12-year-old. Use analogies, "
+                    "no jargon, and focus on what they did and why it matters."
+                ),
+            }
+
+            llm = ChatOpenAI(
+                model="gpt-5.4-nano-2026-03-17",
+                temperature=0.7,
+                api_key=settings.OPENAI_API_KEY,
+            )
+            structured = llm.with_structured_output(DeepExplanationOutput)
+
+            authors_str = ", ".join(paper.authors) if paper.authors else "Unknown"
+
+            prompt = ChatPromptTemplate.from_messages([
+                ("system", (
+                    "You are writing a deep explanation of a scientific paper for a user. "
+                    "{level_instruction} "
+                    "The user's research goal: {filtering_goal}\n\n"
+                    "Write a 300-600 word markdown explanation with headers, bullets, and bold key terms. "
+                    "This should be a deep read, not a 3-sentence summary."
+                )),
+                ("human", (
+                    "Paper: {title}\n"
+                    "Authors: {authors}\n\n"
+                    "Relevant sections:\n{filtered_text}"
+                )),
+            ])
+
+            chain = prompt | structured
+            output = chain.invoke({
+                "level_instruction": level_instructions.get(level, level_instructions["professional"]),
+                "filtering_goal": filtering_goal or "General AI research",
+                "title": paper.title,
+                "authors": authors_str,
+                "filtered_text": filtered_text,
+            })
+
+            # Step 4: Cache result (upsert to handle race condition)
+            existing = await session.execute(
+                select(PaperExplanation)
+                .where(PaperExplanation.user_paper_id == uuid.UUID(user_paper_id))
+                .where(PaperExplanation.level == level)
+            )
+            existing_row = existing.scalars().first()
+
+            if existing_row:
+                existing_row.explanation = output.explanation
+            else:
+                session.add(PaperExplanation(
+                    user_paper_id=uuid.UUID(user_paper_id),
+                    level=level,
+                    explanation=output.explanation,
+                ))
+
+            await session.commit()
+            logger.info(f"Deep explanation cached for user_paper {user_paper_id} at level '{level}'")
 
     asyncio.run(_run())
+
 
 @celery_app.task(name="pipeline.trigger_memory_summarizer")
 def run_memory_summarizer(user_id: str, new_comment: str):

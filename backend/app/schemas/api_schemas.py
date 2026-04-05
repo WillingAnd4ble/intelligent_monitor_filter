@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List, Literal, Optional
 
 class LoginRequest(BaseModel):
     email: str
@@ -40,6 +40,13 @@ class ExplanationResponse(BaseModel):
     user_paper_id: str
     level: str
     explanation: str
+
+class ExplainResponse(BaseModel):
+    status: Literal["ready", "processing", "error"]
+    level: Optional[str] = None
+    explanation: Optional[str] = None
+    task_id: Optional[str] = None
+    detail: Optional[str] = None
 
 class PipelineStatusResponse(BaseModel):
     task_id: str

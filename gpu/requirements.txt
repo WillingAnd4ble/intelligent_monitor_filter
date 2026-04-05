@@ -1,0 +1,5 @@
+# For local development and deploying to Modal
+# Install: pip install -r requirements.txt
+# Deploy:  modal deploy gpu_inference.py
+# Test:    modal run gpu_inference.py
+modal>=0.67.0
