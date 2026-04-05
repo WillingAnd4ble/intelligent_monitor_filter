@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -sL \"https://modal.com/docs/guide/gpu\")",
+      "Bash(curl -sL \"https://modal.com/docs/guide/webhooks\")"
+    ]
+  }
+}

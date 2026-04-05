@@ -22,11 +22,11 @@ def _is_modal_ready() -> bool:
     """Check kill switch + credentials. Must pass both to use real GPU."""
     if not settings.MODAL_GPU_ENABLED:
         return False
-    if not settings.MODAL_TOKEN_ID or not settings.MODAL_TOKEN_SECRET:
-        return False
-    # Push credentials into env for Modal SDK
-    os.environ.setdefault("MODAL_TOKEN_ID", settings.MODAL_TOKEN_ID)
-    os.environ.setdefault("MODAL_TOKEN_SECRET", settings.MODAL_TOKEN_SECRET)
+    # If .env has explicit tokens, push them into env for Modal SDK.
+    # Otherwise, SDK falls back to ~/.modal.toml (from `modal token new`).
+    if settings.MODAL_TOKEN_ID and settings.MODAL_TOKEN_SECRET:
+        os.environ.setdefault("MODAL_TOKEN_ID", settings.MODAL_TOKEN_ID)
+        os.environ.setdefault("MODAL_TOKEN_SECRET", settings.MODAL_TOKEN_SECRET)
     return True
 
 

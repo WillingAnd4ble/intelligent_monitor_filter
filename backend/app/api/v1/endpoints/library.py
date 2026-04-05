@@ -1,20 +1,16 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import List
 import uuid
 
-from langchain_openai import ChatOpenAI
-from langchain_core.prompts import ChatPromptTemplate
-
 from app.db.database import get_db
 from app.db.models import User, UserPaper, Paper, PaperExplanation, UserSettings
-from app.schemas.api_schemas import PaperResponse, ExplanationResponse, StatusResponse
+from app.schemas.api_schemas import PaperResponse, ExplainResponse, StatusResponse
 from app.api.deps import get_current_user
-from app.core.config import settings
-from app.agents.schemas import ExplainerOutput
 
 router = APIRouter()
+
 
 @router.get("/", response_model=List[PaperResponse])
 async def get_library(
@@ -29,9 +25,9 @@ async def get_library(
         .where(UserPaper.status == "accepted")
         .order_by(UserPaper.created_at.desc())
     )
-    
+
     rows = result.all()
-    
+
     response = []
     for user_paper, paper in rows:
         response.append(
@@ -49,26 +45,31 @@ async def get_library(
 
     return response
 
-@router.post("/{user_paper_id}/explain", response_model=ExplanationResponse)
+
+@router.post("/{user_paper_id}/explain", response_model=ExplainResponse)
 async def explain_paper(
     user_paper_id: str,
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_db)
 ):
-    """Generates or returns cached explanation at user's library_explanation_level."""
-    # Verify ownership
+    """Generates or returns cached deep explanation at user's library_explanation_level.
+
+    If cached, returns immediately. Otherwise dispatches a Celery task and returns task_id
+    for the frontend to poll via the /explain/status endpoint.
+    """
+    # Verify ownership + accepted status
     result = await session.execute(
         select(UserPaper, Paper)
         .join(Paper, UserPaper.paper_id == Paper.id)
         .where(UserPaper.id == uuid.UUID(user_paper_id))
         .where(UserPaper.user_id == user.id)
+        .where(UserPaper.status == "accepted")
     )
     row = result.first()
     if not row:
-        raise HTTPException(status_code=404, detail="UserPaper not found.")
-    user_paper, paper = row
+        raise HTTPException(status_code=404, detail="Accepted paper not found in your library.")
 
-    # Get user's preferred explanation level
+    # Get user's preferred explanation level + content_interest
     settings_result = await session.execute(
         select(UserSettings).where(UserSettings.user_id == user.id)
     )
@@ -83,52 +84,80 @@ async def explain_paper(
     )
     existing = cached.scalars().first()
     if existing:
-        return ExplanationResponse(
-            user_paper_id=user_paper_id,
+        return ExplainResponse(
+            status="ready",
             level=existing.level,
             explanation=existing.explanation
         )
 
-    # Generate via LLM
-    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.7, api_key=settings.OPENAI_API_KEY)
-    structured = llm.with_structured_output(ExplainerOutput)
+    # Dispatch Celery task
+    from app.worker.celery_app import generate_deep_explanation
+    task = generate_deep_explanation.delay(user_paper_id, str(user.id))
 
-    level_instructions = {
-        "professional": "Write for an expert researcher. Use precise technical language.",
-        "student": "Write for a university student. Explain key concepts clearly.",
-        "kid": "Write for a curious 12-year-old. Use simple language and analogies."
-    }
-
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", (
-            "Explain why this paper is relevant to the user. "
-            "{level_instruction} "
-            "Keep it to 3-4 sentences maximum."
-        )),
-        ("human", "Title: {title}\n\nAbstract: {abstract}")
-    ])
-
-    chain = prompt | structured
-    result = chain.invoke({
-        "level_instruction": level_instructions.get(level, level_instructions["professional"]),
-        "title": paper.title,
-        "abstract": paper.abstract
-    })
-
-    # Cache the result
-    new_explanation = PaperExplanation(
-        user_paper_id=uuid.UUID(user_paper_id),
-        level=level,
-        explanation=result.explanation
+    return ExplainResponse(
+        status="processing",
+        task_id=task.id
     )
-    session.add(new_explanation)
-    await session.commit()
 
-    return ExplanationResponse(
-        user_paper_id=user_paper_id,
-        level=level,
-        explanation=result.explanation
+
+@router.get("/{user_paper_id}/explain/status", response_model=ExplainResponse)
+async def explain_status(
+    user_paper_id: str,
+    task_id: str = Query(...),
+    user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db)
+):
+    """Poll endpoint for async deep explanation generation."""
+    # Get user's preferred level
+    settings_result = await session.execute(
+        select(UserSettings).where(UserSettings.user_id == user.id)
     )
+    user_settings = settings_result.scalars().first()
+    level = user_settings.library_explanation_level if user_settings else "professional"
+
+    # Check if result appeared in cache since POST was made
+    cached = await session.execute(
+        select(PaperExplanation)
+        .where(PaperExplanation.user_paper_id == uuid.UUID(user_paper_id))
+        .where(PaperExplanation.level == level)
+    )
+    existing = cached.scalars().first()
+    if existing:
+        return ExplainResponse(
+            status="ready",
+            level=existing.level,
+            explanation=existing.explanation
+        )
+
+    # Check Celery task state
+    from app.worker.celery_app import celery_app
+    result = celery_app.AsyncResult(task_id)
+
+    if result.state in ("PENDING", "STARTED"):
+        return ExplainResponse(status="processing")
+
+    if result.state == "FAILURE":
+        return ExplainResponse(status="error", detail="Explanation generation failed")
+
+    if result.state == "SUCCESS":
+        # Task finished — result should be in cache now, re-check
+        cached2 = await session.execute(
+            select(PaperExplanation)
+            .where(PaperExplanation.user_paper_id == uuid.UUID(user_paper_id))
+            .where(PaperExplanation.level == level)
+        )
+        existing2 = cached2.scalars().first()
+        if existing2:
+            return ExplainResponse(
+                status="ready",
+                level=existing2.level,
+                explanation=existing2.explanation
+            )
+        return ExplainResponse(status="error", detail="Task completed but explanation not found")
+
+    # Unknown state
+    return ExplainResponse(status="processing")
+
 
 @router.delete("/{user_paper_id}", response_model=StatusResponse)
 async def remove_from_library(
