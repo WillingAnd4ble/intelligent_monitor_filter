@@ -84,7 +84,7 @@ async def ingest_papers(session: AsyncSession, papers_data: list[dict]):
         return
 
     # Batch call Modal SPECTER2 for all new papers at once
-    embeddings = specter2_embed_batch([
+    embeddings = await specter2_embed_batch([
         {"title": p["title"], "abstract": p["abstract"]} for p in new_papers
     ])
 

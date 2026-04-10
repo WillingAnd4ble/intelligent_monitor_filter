@@ -2,10 +2,8 @@ import asyncio
 import sys
 if sys.platform == 'win32':
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-from contextlib import asynccontextmanager
 from celery import Celery
 from app.core.config import settings
-from app.db.database import AsyncSessionLocal
 from sqlalchemy import select
 
 
@@ -41,7 +39,12 @@ def dispatch_scheduled_runs():
     current_hour = datetime.now(timezone.utc).strftime("%H:00")
 
     async def _run():
-        async with AsyncSessionLocal() as session:
+        from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+        from sqlalchemy.pool import NullPool
+        engine = create_async_engine(settings.DATABASE_URL, poolclass=NullPool)
+        SessionLocal = async_sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
+
+        async with SessionLocal() as session:
             result = await session.execute(
                 select(UserSettings).where(
                     UserSettings.notification_time == current_hour,
@@ -53,22 +56,30 @@ def dispatch_scheduled_runs():
                 user_id_str = str(us.user_id)
                 logger.info(f"Scheduling pipeline run for user {user_id_str} (notification_time={current_hour})")
                 trigger_agent_discovery.delay(user_id_str)
+        await engine.dispose()
 
     asyncio.run(_run())
 
 
 @celery_app.task(name="pipeline.trigger_goal_distiller")
 def trigger_goal_distiller(user_id: str):
-    """Hits the explicit GoalDistiller targeting custom properties."""
+    """Distills filtering criteria AND embeds filtering_goal via SPECTER2."""
     from app.agents.distiller import run_goal_distiller
+    from app.worker.modal_client import specter2_embed_batch
     from app.db.models import UserSettings
     import uuid
-    
+
     async def _run():
-        async with AsyncSessionLocal() as session:
+        from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+        from sqlalchemy.pool import NullPool
+        engine = create_async_engine(settings.DATABASE_URL, poolclass=NullPool)
+        SessionLocal = async_sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
+
+        async with SessionLocal() as session:
             result = await session.execute(select(UserSettings).where(UserSettings.user_id == uuid.UUID(user_id)))
             settings_obj = result.scalars().first()
             if settings_obj:
+                # 1. Distill criteria (existing logic)
                 distilled = run_goal_distiller(
                     categories=settings_obj.categories,
                     topics=settings_obj.topics,
@@ -76,7 +87,16 @@ def trigger_goal_distiller(user_id: str):
                     filtering_goal=settings_obj.filtering_goal
                 )
                 settings_obj.distilled_criteria = distilled
+
+                # 2. Embed filtering_goal via SPECTER2
+                if settings_obj.filtering_goal:
+                    embeddings = await specter2_embed_batch([
+                        {"title": settings_obj.filtering_goal, "abstract": settings_obj.filtering_goal}
+                    ])
+                    settings_obj.goal_embedding = embeddings[0]
+
                 await session.commit()
+        await engine.dispose()
 
     asyncio.run(_run())
 
@@ -119,14 +139,24 @@ def trigger_agent_discovery(user_id: str):
             fm = fm_result.scalars().first()
             feedback_str = fm.summarized_feedback if fm and fm.summarized_feedback else ""
 
-            # 3. Hybrid RRF Search mapping mock arrays locally
-            mock_query_embed = [0.0] * 768
+            # 3. Hybrid RRF Search with real SPECTER2 query embedding
+            query_embedding = user_settings.goal_embedding
+            if not query_embedding:
+                # Fallback: embed on-the-fly if goal_embedding not cached yet
+                from app.worker.modal_client import specter2_embed_batch
+                if user_settings.filtering_goal:
+                    embeddings = await specter2_embed_batch([
+                        {"title": user_settings.filtering_goal, "abstract": user_settings.filtering_goal}
+                    ])
+                    query_embedding = embeddings[0]
+                else:
+                    query_embedding = [0.0] * 768
+
             candidates = await perform_hybrid_rrf_search(
                 session=session,
                 query_text=user_settings.filtering_goal or "AI Agents",
-                query_embedding=mock_query_embed,
-                limit=10,
-                rrf_k=60
+                query_embedding=query_embedding,
+                limit=20,
             )
 
             # 4. Standard Graph Nodes Engine Loop
@@ -160,7 +190,7 @@ def trigger_agent_discovery(user_id: str):
                     "agent_score": 0.0
                 }
 
-                final_state = langgraph_app.invoke(state_input)
+                final_state = await langgraph_app.ainvoke(state_input)
 
                 # 'feed' = show in user feed for review, 'rejected' = agent filtered out
                 # 'accepted' is reserved for user explicit accept action
@@ -235,7 +265,12 @@ def generate_deep_explanation(user_paper_id: str, user_id: str):
         explanation: str = Field(description="Markdown-formatted deep explanation, 300-600 words")
 
     async def _run():
-        async with AsyncSessionLocal() as session:
+        from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+        from sqlalchemy.pool import NullPool
+        engine = create_async_engine(settings.DATABASE_URL, poolclass=NullPool)
+        SessionLocal = async_sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
+
+        async with SessionLocal() as session:
             # Load user_paper + paper
             result = await session.execute(
                 select(UserPaper, Paper)
@@ -259,7 +294,7 @@ def generate_deep_explanation(user_paper_id: str, user_id: str):
             filtering_goal = user_settings.filtering_goal if user_settings else ""
 
             # Step 1: Fetch full PDF text via Marker
-            extracted_text = marker_extract_pdf(paper.pdf_url)
+            extracted_text = await marker_extract_pdf(paper.pdf_url)
             if not extracted_text:
                 extracted_text = paper.abstract
 
@@ -335,6 +370,7 @@ def generate_deep_explanation(user_paper_id: str, user_id: str):
 
             await session.commit()
             logger.info(f"Deep explanation cached for user_paper {user_paper_id} at level '{level}'")
+        await engine.dispose()
 
     asyncio.run(_run())
 
@@ -349,7 +385,12 @@ def run_memory_summarizer(user_id: str, new_comment: str):
     import uuid
 
     async def _run():
-        async with AsyncSessionLocal() as session:
+        from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+        from sqlalchemy.pool import NullPool
+        engine = create_async_engine(settings.DATABASE_URL, poolclass=NullPool)
+        SessionLocal = async_sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
+
+        async with SessionLocal() as session:
             result = await session.execute(
                 select(FeedbackMemory).where(FeedbackMemory.user_id == uuid.UUID(user_id))
             )
@@ -394,5 +435,6 @@ def run_memory_summarizer(user_id: str, new_comment: str):
 
             memory.summarized_feedback = result.summarized_feedback
             await session.commit()
+        await engine.dispose()
 
     asyncio.run(_run())
