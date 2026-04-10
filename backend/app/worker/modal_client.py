@@ -32,7 +32,7 @@ def _is_modal_ready() -> bool:
 
 # ── SPECTER2 ──────────────────────────────────────────────────────
 
-def specter2_embed_batch(title_abstract_pairs: list[dict]) -> list[list[float]]:
+async def specter2_embed_batch(title_abstract_pairs: list[dict]) -> list[list[float]]:
     """
     Generate SPECTER2 embeddings for a batch of papers.
 
@@ -55,12 +55,27 @@ def specter2_embed_batch(title_abstract_pairs: list[dict]) -> list[list[float]]:
     logger.info(f"Calling Modal SPECTER2 for {len(texts)} papers")
     cls = modal.Cls.from_name(MODAL_APP_NAME, "Specter2Embedder")
     embedder = cls()
-    return embedder.embed_batch.remote(texts)
+    return await embedder.embed_batch.remote.aio(texts)
 
 
 # ── MARKER PDF ────────────────────────────────────────────────────
 
-def marker_extract_pdf(pdf_url: str) -> str:
+MAX_PDF_BYTES = 15 * 1024 * 1024  # 15 MB
+
+
+def _check_pdf_size(pdf_url: str) -> int | None:
+    """HEAD request to get Content-Length. Returns bytes or None if unknown."""
+    import urllib.request
+    try:
+        req = urllib.request.Request(pdf_url, method="HEAD")
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            cl = resp.headers.get("Content-Length")
+            return int(cl) if cl else None
+    except Exception:
+        return None
+
+
+async def marker_extract_pdf(pdf_url: str) -> str:
     """
     Extract full text from a PDF using MARKER on Modal GPU.
 
@@ -78,9 +93,14 @@ def marker_extract_pdf(pdf_url: str) -> str:
         logger.warning("No pdf_url provided — skipping MARKER extraction")
         return ""
 
+    size = _check_pdf_size(pdf_url)
+    if size is not None and size > MAX_PDF_BYTES:
+        logger.warning(f"PDF too large ({size / 1024 / 1024:.1f} MB > 15 MB limit) — skipping: {pdf_url}")
+        return ""
+
     import modal
 
-    logger.info(f"Calling Modal MARKER for {pdf_url}")
+    logger.info(f"Calling Modal MARKER for {pdf_url}" + (f" ({size / 1024 / 1024:.1f} MB)" if size else ""))
     cls = modal.Cls.from_name(MODAL_APP_NAME, "MarkerExtractor")
     extractor = cls()
-    return extractor.extract.remote(pdf_url)
+    return await extractor.extract.remote.aio(pdf_url)

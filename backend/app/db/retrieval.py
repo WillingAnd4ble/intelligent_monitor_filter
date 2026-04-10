@@ -7,7 +7,8 @@ async def perform_hybrid_rrf_search(
     query_text: str,
     query_embedding: List[float],
     limit: int = 50,
-    rrf_k: int = 60
+    rrf_k_semantic: int = 30,
+    rrf_k_lexical: int = 60,
 ) -> List[Dict[str, Any]]:
     """
     Executes a high-efficiency Reciprocal Rank Fusion (RRF) query utilizing native PostgreSQL mapping.
@@ -42,8 +43,8 @@ async def perform_hybrid_rrf_search(
         )
         SELECT 
             p.id, p.title, p.abstract, p.authors, p.pdf_url, p.source_url, p.published_at,
-            COALESCE(1.0 / (:rrf_k + ss.rank_semantic), 0.0) + 
-            COALESCE(1.0 / (:rrf_k + ls.rank_lexical), 0.0) as rrf_score
+            COALESCE(1.0 / (:rrf_k_semantic + ss.rank_semantic), 0.0) +
+            COALESCE(1.0 / (:rrf_k_lexical + ls.rank_lexical), 0.0) as rrf_score
         FROM papers p
         FULL OUTER JOIN semantic_search ss ON p.id = ss.id
         FULL OUTER JOIN lexical_search ls ON p.id = ls.id
@@ -60,7 +61,8 @@ async def perform_hybrid_rrf_search(
         {
             "embedding_val": vector_str,
             "query_text": query_text,
-            "rrf_k": rrf_k,
+            "rrf_k_semantic": rrf_k_semantic,
+            "rrf_k_lexical": rrf_k_lexical,
             "limit": limit
         }
     )

@@ -1,0 +1,51 @@
+{
+  "_comment": "Template evaluation dataset. Replace with 100 real papers. See GROUND_TRUTH_GUIDE.md for instructions.",
+  "criteria_used_for_labeling": [
+    "Must feature multi-agent systems with 2 or more collaborating agents",
+    "Must focus on Large Language Models (not classical robotics or RL-only)",
+    "Must include experimental evaluation or benchmarks",
+    "Must discuss inter-agent communication or coordination mechanisms"
+  ],
+  "papers": [
+    {
+      "paper_id": "2404.12345",
+      "title": "Multi-Agent Coordination via Large Language Models",
+      "abstract": "We propose a framework where multiple LLM-based agents coordinate through natural language to solve complex planning tasks. Our approach uses a shared communication protocol and achieves state-of-the-art results on collaborative benchmarks.",
+      "full_text": "We propose a framework where multiple LLM-based agents coordinate through natural language to solve complex planning tasks. Our approach uses a shared communication protocol and achieves state-of-the-art results on collaborative benchmarks. Section 3: Methodology. We design a multi-agent system with N agents, each powered by GPT-4. Agents communicate via structured JSON messages. Section 4: Experiments. We evaluate on ALFWorld and WebShop benchmarks, showing 23% improvement over single-agent baselines.",
+      "ground_truth": 1,
+      "tags": ["relevant", "multi-agent", "llm"]
+    },
+    {
+      "paper_id": "2404.22222",
+      "title": "Emergent Communication in Multi-Agent Reinforcement Learning",
+      "abstract": "We study emergent language in MARL settings where agents learn to communicate without pre-defined protocols. Using referential games with continuous action spaces, we show that emergent communication improves coordination in cooperative tasks.",
+      "full_text": "We study emergent language in MARL settings where agents learn to communicate without pre-defined protocols. Using referential games with continuous action spaces, we show that emergent communication improves coordination in cooperative tasks. While we use RL agents rather than LLMs, the coordination mechanisms are relevant to understanding multi-agent communication more broadly.",
+      "ground_truth": 0,
+      "tags": ["borderline", "multi-agent", "rl-not-llm"]
+    },
+    {
+      "paper_id": "2404.33333",
+      "title": "A Survey of Transformer Architectures for Natural Language Understanding",
+      "abstract": "This survey covers recent advances in transformer architectures for NLU tasks including sentiment analysis, named entity recognition, and question answering. We compare BERT, RoBERTa, and DeBERTa across standard benchmarks.",
+      "full_text": "This survey covers recent advances in transformer architectures for NLU tasks. We compare BERT, RoBERTa, and DeBERTa across standard benchmarks including GLUE and SuperGLUE.",
+      "ground_truth": 0,
+      "tags": ["hard_trap", "nlp-not-agents"]
+    },
+    {
+      "paper_id": "2404.44444",
+      "title": "LLM-Based Debate: Multi-Agent Argumentation for Factual Reasoning",
+      "abstract": "We present a multi-agent debate framework where multiple LLM instances argue and cross-examine each other to improve factual accuracy. Experiments on TruthfulQA and MMLU show that debate between 3 agents reduces hallucination by 31% compared to single-agent chain-of-thought.",
+      "full_text": "We present a multi-agent debate framework where multiple LLM instances argue and cross-examine each other. Section 3: Our approach instantiates 3 GPT-4 agents with different personas. They take turns presenting arguments and counter-arguments. A judge agent synthesizes the final answer. Section 4: Experiments on TruthfulQA show 31% reduction in hallucination. Section 5: Analysis of inter-agent communication patterns reveals emergent specialization.",
+      "ground_truth": 1,
+      "tags": ["relevant", "multi-agent", "llm", "experiments"]
+    },
+    {
+      "paper_id": "2404.55555",
+      "title": "Optimal Control of Quadrotor Swarms Using Deep Reinforcement Learning",
+      "abstract": "We address the problem of coordinating quadrotor swarms using deep RL. Our multi-robot system learns decentralized policies for formation control and obstacle avoidance in simulation, achieving 95% success rate in cluttered environments.",
+      "full_text": "We address quadrotor swarm coordination using deep RL. Our multi-robot system learns decentralized policies for formation control.",
+      "ground_truth": 0,
+      "tags": ["hard_trap", "multi-agent-but-robotics"]
+    }
+  ]
+}

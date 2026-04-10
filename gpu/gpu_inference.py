@@ -98,7 +98,7 @@ class Specter2Embedder:
     image=marker_image,
     gpu="T4",
     scaledown_window=60,   # shutdown 60s after last call
-    timeout=180,                 # 3 min max per PDF (download + OCR)
+    timeout=360,                 # 3 min max per PDF (download + OCR)
     max_containers=3,         # max 3 containers (MARKER is called per-paper)
     retries=modal.Retries(max_retries=2, backoff_coefficient=2.0),
 )

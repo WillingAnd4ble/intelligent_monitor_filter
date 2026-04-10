@@ -1,0 +1,27 @@
+# Test framework
+pytest>=8.0.0
+pytest-asyncio>=0.23.0
+
+# HTTP client for FastAPI TestClient
+httpx>=0.27.0
+
+# Benchmark experiments
+streamlit>=1.32.0
+matplotlib>=3.8.0
+pandas>=2.2.0
+scikit-learn>=1.4.0
+
+# Optional: better semantic search in Experiment 1
+# sentence-transformers>=2.5.0
+
+# Backend dependencies (also needed for imports)
+fastapi[all]>=0.110.0
+pydantic>=2.6.4
+pydantic-settings>=2.2.1
+sqlalchemy>=2.0.28
+langchain>=0.1.13
+langgraph>=0.0.30
+langchain-openai>=0.1.3
+pyjwt[crypto]>=2.8.0
+passlib[bcrypt]>=1.7.4
+pgvector>=0.2.5

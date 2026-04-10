@@ -1,0 +1,4 @@
+"C:\Program Files\Git\bin\bash.exe" -c "cd /c/Users/Work/Documents/Studie/Intelligent_filter/Building_planning_station && ./dev.sh"
+
+
+cd /c/Users/Work/Documents/Studie/Intelligent_filter/Building_planning_station

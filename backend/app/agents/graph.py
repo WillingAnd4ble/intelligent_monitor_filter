@@ -88,13 +88,13 @@ def node_critique(state: AgentState):
         "critique_reasonbook": result.reasonbook
     }
 
-def node_pdf_extractor(state: AgentState):
+async def node_pdf_extractor(state: AgentState):
     """Extracts full PDF text via MARKER on Modal GPU. Falls back to abstract."""
     from app.worker.modal_client import marker_extract_pdf
 
     pdf_url = state.get("pdf_url")
     if pdf_url:
-        extracted = marker_extract_pdf(pdf_url)
+        extracted = await marker_extract_pdf(pdf_url)
         if extracted:
             return {"extracted_pdf_text": extracted}
 

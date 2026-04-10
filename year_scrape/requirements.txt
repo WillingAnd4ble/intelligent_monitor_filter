@@ -1,0 +1,12 @@
+# Scraping
+python-dotenv>=1.0.0
+
+# Embeddings
+numpy>=1.26.0
+
+# DB loading
+sqlalchemy>=2.0.28
+psycopg2-binary>=2.9.9
+
+# Modal GPU (for real SPECTER2 embeddings)
+modal>=0.67.0
