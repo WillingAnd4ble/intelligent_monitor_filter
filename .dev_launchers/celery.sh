@@ -5,10 +5,6 @@ trap 'echo; echo "[Celery exited with code $? — press enter to close]"; read' 
 cd "/c/Users/Work/Documents/Studie/Intelligent_filter/Building_planning_station/backend"
 source "/c/Users/Work/Documents/Studie/Intelligent_filter/Building_planning_station/.venv/Scripts/activate"
 
-# CRITICAL Windows fix: without this, Celery 5+ silently dies on Python 3.8+
-# because billiard's spawn-based multiprocessing fails to reinitialize.
-export FORKED_BY_MULTIPROCESSING=1
-
 # Wait for Redis to be reachable (docker-compose may still be warming up)
 echo "==> Waiting for Redis on localhost:6379..."
 for i in {1..15}; do

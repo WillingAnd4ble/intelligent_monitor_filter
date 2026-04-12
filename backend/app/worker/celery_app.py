@@ -7,6 +7,26 @@ from app.core.config import settings
 from sqlalchemy import select
 
 
+def _run_async(coro):
+    """Run an async coroutine from a sync Celery task without killing the worker.
+
+    asyncio.run() aggressively cancels pending tasks and sets the event loop to
+    None on exit.  With --pool=solo (main-thread execution), this destroys Modal
+    SDK background coroutines and can cause the Celery worker process to exit.
+
+    This helper creates a fresh loop, runs the coroutine, and closes the loop
+    without nuking the thread-level event loop reference.
+    """
+    loop = asyncio.new_event_loop()
+    try:
+        return loop.run_until_complete(coro)
+    finally:
+        try:
+            loop.close()
+        except Exception:
+            pass
+
+
 celery_app = Celery(
     "arxiv_worker",
     broker=settings.REDIS_URL,
@@ -58,7 +78,7 @@ def dispatch_scheduled_runs():
                 trigger_agent_discovery.delay(user_id_str)
         await engine.dispose()
 
-    asyncio.run(_run())
+    _run_async(_run())
 
 
 @celery_app.task(name="pipeline.trigger_goal_distiller")
@@ -98,7 +118,7 @@ def trigger_goal_distiller(user_id: str):
                 await session.commit()
         await engine.dispose()
 
-    asyncio.run(_run())
+    _run_async(_run())
 
 
 @celery_app.task(name="pipeline.run_discovery")
@@ -109,140 +129,174 @@ def trigger_agent_discovery(user_id: str):
     from app.agents.graph import app as langgraph_app
     from app.db.models import UserSettings, UserPaper, Paper
     import uuid
-    
+    import logging
+
+    logger = logging.getLogger(__name__)
+
     async def _run():
         from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
         from sqlalchemy.pool import NullPool
         engine = create_async_engine(settings.DATABASE_URL, poolclass=NullPool)
         SessionLocal = async_sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
-        
-        async with SessionLocal() as session:
-            # 1. Pipeline Execution — fetch papers from user's configured categories
-            result = await session.execute(select(UserSettings).where(UserSettings.user_id == uuid.UUID(user_id)))
-            user_settings = result.scalars().first()
-            categories = user_settings.categories if user_settings and user_settings.categories else ["cs.AI"]
 
-            # Build ArXiv query from user categories (OR them together)
-            cat_query = "+OR+".join(f"cat:{cat}" for cat in categories)
-            papers = fetch_arxiv_papers(cat_query, max_results=200)
-            await ingest_papers(session, papers)
+        try:
+            async with SessionLocal() as session:
+                # 1. Pipeline Execution — fetch papers from user's configured categories
+                result = await session.execute(select(UserSettings).where(UserSettings.user_id == uuid.UUID(user_id)))
+                user_settings = result.scalars().first()
+                categories = user_settings.categories if user_settings and user_settings.categories else ["cs.AI"]
 
-            # 2. Validate user has distilled criteria before running pipeline
-            if not user_settings or not user_settings.distilled_criteria:
-                return
+                # Build ArXiv query from user categories (OR them together)
+                cat_query = "+OR+".join(f"cat:{cat}" for cat in categories)
+                logger.info(f"[discovery:{user_id[:8]}] Fetching ArXiv papers for categories: {categories}")
+                papers = fetch_arxiv_papers(cat_query, max_results=200)
+                logger.info(f"[discovery:{user_id[:8]}] Fetched {len(papers)} papers from ArXiv, ingesting...")
+                await ingest_papers(session, papers)
+                logger.info(f"[discovery:{user_id[:8]}] Ingestion complete")
 
-            # Load feedback memory for critique node
-            from app.db.models import FeedbackMemory
-            fm_result = await session.execute(
-                select(FeedbackMemory).where(FeedbackMemory.user_id == uuid.UUID(user_id))
-            )
-            fm = fm_result.scalars().first()
-            feedback_str = fm.summarized_feedback if fm and fm.summarized_feedback else ""
-
-            # 3. Hybrid RRF Search with real SPECTER2 query embedding
-            query_embedding = user_settings.goal_embedding
-            if not query_embedding:
-                # Fallback: embed on-the-fly if goal_embedding not cached yet
-                from app.worker.modal_client import specter2_embed_batch
-                if user_settings.filtering_goal:
-                    embeddings = await specter2_embed_batch([
-                        {"title": user_settings.filtering_goal, "abstract": user_settings.filtering_goal}
-                    ])
-                    query_embedding = embeddings[0]
-                else:
-                    query_embedding = [0.0] * 768
-
-            candidates = await perform_hybrid_rrf_search(
-                session=session,
-                query_text=user_settings.filtering_goal or "AI Agents",
-                query_embedding=query_embedding,
-                limit=20,
-            )
-
-            # 4. Standard Graph Nodes Engine Loop
-            for cand in candidates:
-                # Dedup: skip if UserPaper already exists for this (user, paper) pair
-                existing_up = await session.execute(
-                    select(UserPaper).where(
-                        UserPaper.user_id == uuid.UUID(user_id),
-                        UserPaper.paper_id == cand["id"]
+                # 2. Validate user has distilled criteria before running pipeline
+                if not user_settings or not user_settings.distilled_criteria:
+                    logger.warning(
+                        f"[discovery:{user_id[:8]}] ABORTING — no distilled_criteria. "
+                        f"user_settings exists: {user_settings is not None}, "
+                        f"filtering_goal: {getattr(user_settings, 'filtering_goal', None)!r}"
                     )
+                    return
+
+                # Load feedback memory for critique node
+                from app.db.models import FeedbackMemory
+                fm_result = await session.execute(
+                    select(FeedbackMemory).where(FeedbackMemory.user_id == uuid.UUID(user_id))
                 )
-                if existing_up.scalars().first():
-                    continue
+                fm = fm_result.scalars().first()
+                feedback_str = fm.summarized_feedback if fm and fm.summarized_feedback else ""
 
-                state_input = {
-                    "user_id": user_id,
-                    "user_intent": user_settings.filtering_goal or "General",
-                    "distilled_criteria": user_settings.distilled_criteria,
-                    "content_interest": user_settings.content_interest,
-                    "feedback_memory": feedback_str,
-                    "current_paper_id": cand["id"],
-                    "raw_abstract": cand["abstract"],
-                    "pdf_url": cand.get("pdf_url"),
-                    "extracted_pdf_text": None,
-                    "sectioned_text": None,
-                    "evaluator_decision": "borderline",
-                    "evaluator_reasonbook": "",
-                    "critique_decision": True,
-                    "critique_reasonbook": "",
-                    "final_explanation": "",
-                    "agent_score": 0.0
-                }
+                # 3. Hybrid RRF Search with real SPECTER2 query embedding
+                query_embedding = user_settings.goal_embedding
+                if query_embedding is None:
+                    # Fallback: embed on-the-fly if goal_embedding not cached yet
+                    from app.worker.modal_client import specter2_embed_batch
+                    if user_settings.filtering_goal:
+                        logger.info(f"[discovery:{user_id[:8]}] goal_embedding missing, embedding on-the-fly")
+                        embeddings = await specter2_embed_batch([
+                            {"title": user_settings.filtering_goal, "abstract": user_settings.filtering_goal}
+                        ])
+                        query_embedding = embeddings[0]
+                    else:
+                        logger.warning(f"[discovery:{user_id[:8]}] No filtering_goal — using zero vector for semantic search")
+                        query_embedding = [0.0] * 768
 
-                final_state = await langgraph_app.ainvoke(state_input)
-
-                # 'feed' = show in user feed for review, 'rejected' = agent filtered out
-                # 'accepted' is reserved for user explicit accept action
-                status_val = "rejected"
-                if final_state.get("evaluator_decision") == "reject" or final_state.get("critique_decision") is False:
-                    status_val = "rejected"
-                elif final_state.get("evaluator_decision") in ("accept", "borderline"):
-                    status_val = "feed"
-
-                new_up = UserPaper(
-                    user_id=uuid.UUID(user_id),
-                    paper_id=cand["id"],
-                    status=status_val,
-                    agent_score=final_state.get("agent_score"),
-                    agent_explanation=final_state.get("final_explanation")
+                logger.info(f"[discovery:{user_id[:8]}] Running hybrid RRF search...")
+                candidates = await perform_hybrid_rrf_search(
+                    session=session,
+                    query_text=user_settings.filtering_goal or "AI Agents",
+                    query_embedding=query_embedding,
+                    limit=20,
                 )
-                session.add(new_up)
+                logger.info(f"[discovery:{user_id[:8]}] RRF returned {len(candidates)} candidates")
 
-            await session.commit()
+                # 4. Standard Graph Nodes Engine Loop
+                evaluated_count = 0
+                feed_count = 0
+                for i, cand in enumerate(candidates):
+                    # Dedup: skip if UserPaper already exists for this (user, paper) pair
+                    existing_up = await session.execute(
+                        select(UserPaper).where(
+                            UserPaper.user_id == uuid.UUID(user_id),
+                            UserPaper.paper_id == cand["id"]
+                        )
+                    )
+                    if existing_up.scalars().first():
+                        continue
 
-            # 5. Notify user about top-ranked papers (FR17-FR18)
-            from app.worker.notifications import notify_top_picks, TOP_PICK_THRESHOLD
-            from app.db.models import User
-            top_papers_result = await session.execute(
-                select(UserPaper, Paper)
-                .join(Paper, UserPaper.paper_id == Paper.id)
-                .where(
-                    UserPaper.user_id == uuid.UUID(user_id),
-                    UserPaper.status == "feed",
-                    UserPaper.agent_score >= TOP_PICK_THRESHOLD
+                    try:
+                        state_input = {
+                            "user_id": user_id,
+                            "user_intent": user_settings.filtering_goal or "General",
+                            "distilled_criteria": user_settings.distilled_criteria,
+                            "content_interest": user_settings.content_interest,
+                            "feedback_memory": feedback_str,
+                            "current_paper_id": cand["id"],
+                            "raw_abstract": cand["abstract"],
+                            "pdf_url": cand.get("pdf_url"),
+                            "extracted_pdf_text": None,
+                            "sectioned_text": None,
+                            "evaluator_decision": "borderline",
+                            "evaluator_reasonbook": "",
+                            "critique_decision": True,
+                            "critique_reasonbook": "",
+                            "final_explanation": "",
+                            "agent_score": 0.0
+                        }
+
+                        final_state = await langgraph_app.ainvoke(state_input)
+
+                        # 'feed' = show in user feed for review, 'rejected' = agent filtered out
+                        # 'accepted' is reserved for user explicit accept action
+                        status_val = "rejected"
+                        if final_state.get("evaluator_decision") == "reject" or final_state.get("critique_decision") is False:
+                            status_val = "rejected"
+                        elif final_state.get("evaluator_decision") in ("accept", "borderline"):
+                            status_val = "feed"
+
+                        new_up = UserPaper(
+                            user_id=uuid.UUID(user_id),
+                            paper_id=cand["id"],
+                            status=status_val,
+                            agent_score=final_state.get("agent_score"),
+                            agent_explanation=final_state.get("final_explanation")
+                        )
+                        session.add(new_up)
+                        evaluated_count += 1
+                        if status_val == "feed":
+                            feed_count += 1
+                        logger.info(
+                            f"[discovery:{user_id[:8]}] Paper {i+1}/{len(candidates)} "
+                            f"'{cand['id']}' → {status_val} (score={final_state.get('agent_score')})"
+                        )
+                    except Exception as e:
+                        logger.error(f"[discovery:{user_id[:8]}] LangGraph failed on paper '{cand['id']}': {e}", exc_info=True)
+                        continue
+
+                await session.commit()
+                logger.info(f"[discovery:{user_id[:8]}] Pipeline complete — {evaluated_count} evaluated, {feed_count} recommended")
+
+                # 5. Notify user about top-ranked papers (FR17-FR18)
+                from app.worker.notifications import notify_top_picks, TOP_PICK_THRESHOLD
+                from app.db.models import User
+                top_papers_result = await session.execute(
+                    select(UserPaper, Paper)
+                    .join(Paper, UserPaper.paper_id == Paper.id)
+                    .where(
+                        UserPaper.user_id == uuid.UUID(user_id),
+                        UserPaper.status == "feed",
+                        UserPaper.agent_score >= TOP_PICK_THRESHOLD
+                    )
+                    .order_by(UserPaper.agent_score.desc())
+                    .limit(10)
                 )
-                .order_by(UserPaper.agent_score.desc())
-                .limit(10)
-            )
-            top_rows = top_papers_result.all()
-            if top_rows:
-                user_result = await session.execute(
-                    select(User).where(User.id == uuid.UUID(user_id))
-                )
-                user_obj = user_result.scalars().first()
-                top_papers_data = [
-                    {
-                        "title": paper.title,
-                        "source_url": paper.source_url,
-                        "agent_score": up.agent_score,
-                        "agent_explanation": up.agent_explanation,
-                    }
-                    for up, paper in top_rows
-                ]
-                notify_top_picks(user_obj.email, top_papers_data)
-        await engine.dispose()
-    asyncio.run(_run())
+                top_rows = top_papers_result.all()
+                if top_rows:
+                    user_result = await session.execute(
+                        select(User).where(User.id == uuid.UUID(user_id))
+                    )
+                    user_obj = user_result.scalars().first()
+                    top_papers_data = [
+                        {
+                            "title": paper.title,
+                            "source_url": paper.source_url,
+                            "agent_score": up.agent_score,
+                            "agent_explanation": up.agent_explanation,
+                        }
+                        for up, paper in top_rows
+                    ]
+                    notify_top_picks(user_obj.email, top_papers_data)
+        except Exception as e:
+            logger.error(f"[discovery:{user_id[:8]}] TASK FAILED: {e}", exc_info=True)
+            raise
+        finally:
+            await engine.dispose()
+    _run_async(_run())
 
 @celery_app.task(name="library.generate_deep_explanation")
 def generate_deep_explanation(user_paper_id: str, user_id: str):
@@ -372,7 +426,7 @@ def generate_deep_explanation(user_paper_id: str, user_id: str):
             logger.info(f"Deep explanation cached for user_paper {user_paper_id} at level '{level}'")
         await engine.dispose()
 
-    asyncio.run(_run())
+    _run_async(_run())
 
 
 @celery_app.task(name="pipeline.trigger_memory_summarizer")
@@ -437,4 +491,4 @@ def run_memory_summarizer(user_id: str, new_comment: str):
             await session.commit()
         await engine.dispose()
 
-    asyncio.run(_run())
+    _run_async(_run())
