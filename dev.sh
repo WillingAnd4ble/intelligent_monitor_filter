@@ -96,10 +96,6 @@ trap 'echo; echo "[Celery exited with code \$? — press enter to close]"; read'
 cd "$BACKEND_DIR"
 source "$VENV_ACTIVATE"
 
-# CRITICAL Windows fix: without this, Celery 5+ silently dies on Python 3.8+
-# because billiard's spawn-based multiprocessing fails to reinitialize.
-export FORKED_BY_MULTIPROCESSING=1
-
 # Wait for Redis to be reachable (docker-compose may still be warming up)
 echo "==> Waiting for Redis on localhost:6379..."
 for i in {1..15}; do
@@ -204,6 +200,16 @@ start_all() {
     fi
 }
 
+restart_celery() {
+    echo "==> Killing existing Celery worker..."
+    powershell -Command "Get-CimInstance Win32_Process -Filter \"Name='python.exe'\" | Where-Object { \$_.CommandLine -match 'celery' } | ForEach-Object { Stop-Process -Id \$_.ProcessId -Force }" 2>/dev/null || true
+    sleep 1
+    write_launchers
+    echo "==> Spawning new Celery tab..."
+    spawn_one "Celery Worker" "$LAUNCH_DIR/celery.sh"
+    echo "==> Celery restarted."
+}
+
 stop_all() {
     echo "==> Stopping Docker services..."
     (cd "$BACKEND_DIR" && docker-compose down) || true
@@ -241,11 +247,14 @@ case "${1:-all}" in
     docker)
         start_docker
         ;;
+    celery|restart-celery)
+        restart_celery
+        ;;
     stop|down)
         stop_all
         ;;
     *)
-        echo "Usage: $0 [all|backend|frontend|docker|stop]"
+        echo "Usage: $0 [all|backend|frontend|docker|celery|stop]"
         exit 1
         ;;
 esac
