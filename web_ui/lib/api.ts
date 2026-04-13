@@ -59,6 +59,14 @@ export async function explainPaper(userPaperId: string) {
   return data;
 }
 
+export async function getExplainStatus(userPaperId: string, taskId: string) {
+  const { data } = await apiClient.get<ExplainResponse>(
+    `${v1}/library/${userPaperId}/explain/status`,
+    { params: { task_id: taskId } },
+  );
+  return data;
+}
+
 export async function removeFromLibrary(userPaperId: string) {
   await apiClient.delete(`${v1}/library/${userPaperId}`);
 }

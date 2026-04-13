@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { explainPaper, getLibrary, removeFromLibrary } from "@/lib/api";
+import { getLibrary, removeFromLibrary } from "@/lib/api";
 import { LibraryCard } from "@/components/library/LibraryCard";
 
 export default function LibraryPage() {
@@ -70,7 +70,6 @@ export default function LibraryPage() {
             key={p.user_paper_id}
             paper={p}
             onRemove={(id) => removeMut.mutate(id)}
-            onExplain={(id) => explainPaper(id)}
           />
         ))}
       </div>

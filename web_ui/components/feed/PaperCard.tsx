@@ -3,7 +3,7 @@
 import { useState, type CSSProperties } from "react";
 import type { PaperListItem } from "@/lib/types";
 import { cn } from "@/lib/cn";
-import { ExternalLink, FileText } from "lucide-react";
+import { ExternalLink, FileText, Star } from "lucide-react";
 
 function scoreStripStyle(score: number | null): CSSProperties {
   if (score == null) {
@@ -48,6 +48,12 @@ export function PaperCard({ paper, onAccept, onReject }: Props) {
         )}
         <div className="mb-3 flex flex-wrap items-center gap-2 pr-16">
           <span className="font-mono text-xs text-ink-muted">{paper.paper_id}</span>
+          {paper.is_top_pick && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-soft px-2.5 py-0.5 text-xs font-semibold text-amber-warm ring-1 ring-amber-warm/20">
+              <Star className="h-3 w-3 fill-current" />
+              Recommended
+            </span>
+          )}
         </div>
         <h2 className="text-lg font-semibold leading-snug text-ink-primary">
           {paper.title}

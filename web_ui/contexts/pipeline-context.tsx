@@ -39,8 +39,8 @@ export function PipelineProvider({ children }: { children: React.ReactNode }) {
   const pollOnce = useCallback(async (id: string) => {
     try {
       const s = await getPipelineStatus(id);
-      setStateLabel(s.state);
-      setProgress(s.progress);
+      setStateLabel(s.stage || s.state);
+      setProgress(s.progress ?? 0);
       pollCount.current += 1;
       const err = /error|fail|cancel/i.test(s.state);
       const done =

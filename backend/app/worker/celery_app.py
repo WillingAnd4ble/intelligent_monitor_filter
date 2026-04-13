@@ -143,21 +143,27 @@ def trigger_agent_discovery(self, user_id: str):
 
     logger = logging.getLogger(__name__)
 
+    def _update(stage: str, progress: int):
+        self.update_state(state="PROGRESS", meta={"stage": stage, "progress": progress})
+
     async def _run():
         engine, SessionLocal = _make_session()
 
         try:
             async with SessionLocal() as session:
                 # ── 0. Load user settings ──────────────────────────────
+                _update("Loading settings", 5)
                 result = await session.execute(select(UserSettings).where(UserSettings.user_id == uuid.UUID(user_id)))
                 user_settings = result.scalars().first()
                 categories = user_settings.categories if user_settings and user_settings.categories else ["cs.AI"]
 
                 # ── 1. Scrape + ingest ArXiv papers ────────────────────
+                _update("Fetching ArXiv papers", 10)
                 cat_query = "+OR+".join(f"cat:{cat}" for cat in categories)
                 logger.info(f"[pipeline:{user_id[:8]}] Fetching ArXiv papers for: {categories}")
                 papers = fetch_arxiv_papers(cat_query, max_results=200)
                 logger.info(f"[pipeline:{user_id[:8]}] Fetched {len(papers)} papers, ingesting...")
+                _update("Ingesting papers", 15)
                 await ingest_papers(session, papers)
 
                 # ── 2. Validate prerequisites ──────────────────────────
@@ -173,6 +179,7 @@ def trigger_agent_discovery(self, user_id: str):
                 feedback_str = fm.summarized_feedback if fm and fm.summarized_feedback else ""
 
                 # ── 3. Hybrid RRF Search → 30 candidates ──────────────
+                _update("Running hybrid search", 20)
                 query_embedding = user_settings.goal_embedding
                 if query_embedding is None:
                     from app.worker.modal_client import specter2_embed_batch
@@ -195,9 +202,12 @@ def trigger_agent_discovery(self, user_id: str):
                 logger.info(f"[pipeline:{user_id[:8]}] RRF returned {len(candidates)} candidates")
 
                 # ── 4. Phase 1: Evaluator + Critique (abstract-only) ──
+                _update("Phase 1: Evaluating abstracts", 30)
                 phase1_results = []  # list of (candidate, final_state)
 
+                total_cands = len(candidates)
                 for i, cand in enumerate(candidates):
+                    _update(f"Phase 1: Paper {i+1}/{total_cands}", 30 + int(20 * i / max(total_cands, 1)))
                     # Dedup: skip existing UserPaper entries
                     existing = await session.execute(
                         select(UserPaper).where(
@@ -260,6 +270,7 @@ def trigger_agent_discovery(self, user_id: str):
                     logger.info(f"[pipeline:{user_id[:8]}] No papers passed Phase 1, pipeline done")
                     return
 
+                _update("Sorting candidates", 55)
                 # ── 5. Sort by evaluator score → take top K ───────────
                 deep_scan_limit = user_settings.deep_scan_limit or 10
                 phase1_results.sort(key=lambda x: x[1].get("evaluator_score", 0), reverse=True)
@@ -294,6 +305,7 @@ def trigger_agent_discovery(self, user_id: str):
                         logger.error(f"[pipeline:{user_id[:8]}] Marker failed for {cand_data['id']}: {e}")
                         return cand_data.get("abstract", "")
 
+                _update(f"Extracting PDFs ({len(top_k)} papers)", 60)
                 logger.info(f"[pipeline:{user_id[:8]}] Starting parallel Marker extraction for {len(top_k)} papers...")
                 markdown_results = await asyncio.gather(*[extract_pdf(c) for c, _ in top_k])
                 logger.info(f"[pipeline:{user_id[:8]}] Marker extraction complete")
@@ -315,6 +327,7 @@ def trigger_agent_discovery(self, user_id: str):
                             "explanation": "Deep reading failed — scored by abstract evaluation only.",
                         }
 
+                _update(f"Phase 2: Deep reading ({len(top_k)} papers)", 75)
                 logger.info(f"[pipeline:{user_id[:8]}] Starting parallel Deep Reader for {len(top_k)} papers...")
                 deep_results = await asyncio.gather(*[
                     deep_read(md, cand, state)
@@ -322,6 +335,7 @@ def trigger_agent_discovery(self, user_id: str):
                 ])
                 logger.info(f"[pipeline:{user_id[:8]}] Deep Reader complete")
 
+                _update("Saving results", 90)
                 # ── 8. Save results + select top 3 picks ──────────────
                 feed_papers = []  # (UserPaper, Paper) for notification
 
@@ -378,6 +392,7 @@ def trigger_agent_discovery(self, user_id: str):
                     f"Top picks: {top_picks_count}"
                 )
 
+                _update("Sending notifications", 95)
                 # ── 9. Notifications for top picks ─────────────────────
                 top_pick_entries = [
                     (up, cand) for up, cand, score in feed_papers[:3]

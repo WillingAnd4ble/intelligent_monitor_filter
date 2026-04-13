@@ -1,22 +1,70 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { PaperListItem } from "@/lib/types";
 import { ExternalLink, Trash2 } from "lucide-react";
 import { ExplanationInline } from "./ExplanationInline";
 import { cn } from "@/lib/cn";
+import { explainPaper, getExplainStatus } from "@/lib/api";
 
 type Props = {
   paper: PaperListItem;
   onRemove: (id: string) => void;
-  onExplain: (id: string) => Promise<{ level: string; explanation: string }>;
 };
 
-export function LibraryCard({ paper, onRemove, onExplain }: Props) {
+export function LibraryCard({ paper, onRemove }: Props) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [payload, setPayload] = useState<{ level: string; explanation: string } | null>(
-    null,
+  const [payload, setPayload] = useState<{
+    level: string;
+    explanation: string;
+  } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const stopPolling = useCallback(() => {
+    if (pollRef.current) {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => stopPolling();
+  }, [stopPolling]);
+
+  const startPolling = useCallback(
+    (taskId: string) => {
+      stopPolling();
+      let attempts = 0;
+      pollRef.current = setInterval(async () => {
+        attempts++;
+        if (attempts > 90) {
+          stopPolling();
+          setLoading(false);
+          setError("Explanation timed out. Try again.");
+          return;
+        }
+        try {
+          const res = await getExplainStatus(paper.user_paper_id, taskId);
+          if (res.status === "ready" && res.level && res.explanation) {
+            stopPolling();
+            setPayload({ level: res.level, explanation: res.explanation });
+            setOpen(true);
+            setLoading(false);
+          } else if (res.status === "error") {
+            stopPolling();
+            setLoading(false);
+            setError(res.detail ?? "Explanation failed.");
+          }
+        } catch {
+          stopPolling();
+          setLoading(false);
+          setError("Failed to check status.");
+        }
+      }, 3000);
+    },
+    [paper.user_paper_id, stopPolling],
   );
 
   const handleExplain = async () => {
@@ -29,12 +77,22 @@ export function LibraryCard({ paper, onRemove, onExplain }: Props) {
       return;
     }
     setLoading(true);
+    setError(null);
     try {
-      const res = await onExplain(paper.user_paper_id);
-      setPayload(res);
-      setOpen(true);
-    } finally {
+      const res = await explainPaper(paper.user_paper_id);
+      if (res.status === "ready" && res.level && res.explanation) {
+        setPayload({ level: res.level, explanation: res.explanation });
+        setOpen(true);
+        setLoading(false);
+      } else if (res.status === "processing" && res.task_id) {
+        startPolling(res.task_id);
+      } else if (res.status === "error") {
+        setLoading(false);
+        setError(res.detail ?? "Explanation failed.");
+      }
+    } catch {
       setLoading(false);
+      setError("Request failed.");
     }
   };
 
@@ -51,7 +109,9 @@ export function LibraryCard({ paper, onRemove, onExplain }: Props) {
             <h2 className="mt-1 text-base font-semibold text-ink-primary">
               {paper.title}
             </h2>
-            <p className="mt-1 font-mono text-xs text-ink-muted">{paper.paper_id}</p>
+            <p className="mt-1 font-mono text-xs text-ink-muted">
+              {paper.paper_id}
+            </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <a
@@ -73,7 +133,7 @@ export function LibraryCard({ paper, onRemove, onExplain }: Props) {
                 loading && "opacity-60",
               )}
             >
-              {loading ? "…" : open ? "Hide" : "Explain"}
+              {loading ? "Generating…" : open ? "Hide" : "Explain"}
             </button>
             <button
               type="button"
@@ -85,6 +145,14 @@ export function LibraryCard({ paper, onRemove, onExplain }: Props) {
             </button>
           </div>
         </div>
+        {loading && (
+          <p className="mt-3 text-xs text-ink-muted animate-pulse">
+            Generating explanation — this may take a minute…
+          </p>
+        )}
+        {error && (
+          <p className="mt-3 text-xs text-red-700">{error}</p>
+        )}
       </div>
       {open && payload && (
         <ExplanationInline

@@ -39,7 +39,8 @@ async def get_library(
                 abstract=paper.abstract,
                 agent_score=user_paper.agent_score,
                 agent_explanation=user_paper.agent_explanation,
-                source_url=paper.source_url
+                source_url=paper.source_url,
+                is_top_pick=user_paper.is_top_pick or False
             )
         )
 
