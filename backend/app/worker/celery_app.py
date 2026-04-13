@@ -100,13 +100,14 @@ def trigger_goal_distiller(user_id: str):
             settings_obj = result.scalars().first()
             if settings_obj:
                 # 1. Distill criteria (existing logic)
-                distilled = run_goal_distiller(
+                distiller_output = run_goal_distiller(
                     categories=settings_obj.categories,
                     topics=settings_obj.topics,
                     content_interest=settings_obj.content_interest,
                     filtering_goal=settings_obj.filtering_goal
                 )
-                settings_obj.distilled_criteria = distilled
+                settings_obj.distilled_criteria = distiller_output.distilled_criteria
+                settings_obj.lexical_query = distiller_output.lexical_query
 
                 # 2. Embed filtering_goal via SPECTER2
                 if settings_obj.filtering_goal:
@@ -189,7 +190,7 @@ def trigger_agent_discovery(user_id: str):
                 logger.info(f"[discovery:{user_id[:8]}] Running hybrid RRF search...")
                 candidates = await perform_hybrid_rrf_search(
                     session=session,
-                    query_text=user_settings.filtering_goal or "AI Agents",
+                    query_text=user_settings.lexical_query or user_settings.filtering_goal or "AI Agents",
                     query_embedding=query_embedding,
                     limit=20,
                 )
