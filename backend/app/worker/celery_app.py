@@ -353,15 +353,21 @@ def trigger_agent_discovery(self, user_id: str):
                         f"(eval_score={eval_state.get('evaluator_score')}, deep_score={dr_score})"
                     )
 
-                # Mark top 3 as top picks
+                # Mark top 3 as top picks (only if score >= 7.0)
+                TOP_PICK_MIN_SCORE = 7.0
                 feed_papers.sort(key=lambda x: x[2], reverse=True)
+                top_picks_count = 0
                 for up, cand, score in feed_papers[:3]:
-                    up.is_top_pick = True
-                    logger.info(f"[pipeline:{user_id[:8]}] TOP PICK: '{cand['id']}' (score={score})")
+                    if score >= TOP_PICK_MIN_SCORE:
+                        up.is_top_pick = True
+                        top_picks_count += 1
+                        logger.info(f"[pipeline:{user_id[:8]}] TOP PICK: '{cand['id']}' (score={score})")
+                    else:
+                        logger.info(f"[pipeline:{user_id[:8]}] Skipped top pick '{cand['id']}' — score {score} < {TOP_PICK_MIN_SCORE}")
 
                 await session.commit()
 
-                total_feed = len([x for x in feed_papers])
+                total_feed = len(feed_papers)
                 total_rejected_phase2 = len(top_k) - total_feed
                 logger.info(
                     f"[pipeline:{user_id[:8]}] Pipeline complete — "
@@ -369,16 +375,23 @@ def trigger_agent_discovery(self, user_id: str):
                     f"Deep scanned: {len(top_k)}, "
                     f"Feed: {total_feed}, "
                     f"Rejected by Deep Reader: {total_rejected_phase2}, "
-                    f"Top picks: {min(3, total_feed)}"
+                    f"Top picks: {top_picks_count}"
                 )
 
                 # ── 9. Notifications for top picks ─────────────────────
-                top_pick_entries = [(up, cand) for up, cand, _ in feed_papers[:3]]
+                top_pick_entries = [
+                    (up, cand) for up, cand, score in feed_papers[:3]
+                    if score >= TOP_PICK_MIN_SCORE
+                ]
                 if top_pick_entries:
                     user_result = await session.execute(
                         select(User).where(User.id == uuid.UUID(user_id))
                     )
                     user_obj = user_result.scalars().first()
+
+                    # Use notification_email if set, otherwise fall back to login email
+                    notify_email = user_settings.notification_email or user_obj.email
+
                     top_papers_data = [
                         {
                             "title": cand["title"],
@@ -388,7 +401,8 @@ def trigger_agent_discovery(self, user_id: str):
                         }
                         for up, cand in top_pick_entries
                     ]
-                    notify_top_picks(user_obj.email, top_papers_data)
+                    notify_top_picks(notify_email, top_papers_data)
+                    logger.info(f"[pipeline:{user_id[:8]}] Notification sent to {notify_email}")
 
         except Exception as e:
             logger.error(f"[pipeline:{user_id[:8]}] TASK FAILED: {e}", exc_info=True)

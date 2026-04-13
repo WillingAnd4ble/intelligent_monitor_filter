@@ -66,7 +66,7 @@ def fetch_arxiv_papers(query: str = "cat:cs.AI", max_results: int = 50) -> list[
             "authors": authors,
             "published_at": published_at,
             "pdf_url": pdf_url,
-            "source_url": entry.find('atom:id', namespace).text
+            "source_url": entry.find('atom:id', namespace).text.replace("http://", "https://")
         })
         
     return papers

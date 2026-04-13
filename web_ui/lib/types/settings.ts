@@ -9,7 +9,9 @@ export type UserSettings = {
   authors: string[];
   content_interest: string[];
   library_explanation_level: LibraryExplanationLevel | string;
+  notification_email: string | null;
   notification_time: string | null;
+  deep_scan_limit: number;
   pdf_parser_mode: PdfParserMode | string;
 };
 
@@ -20,6 +22,8 @@ export type SettingsUpdatePayload = Partial<{
   authors: string[];
   content_interest: string[];
   library_explanation_level: string;
+  notification_email: string | null;
   notification_time: string | null;
+  deep_scan_limit: number;
   pdf_parser_mode: string;
 }>;

@@ -22,10 +22,8 @@ class Settings(BaseSettings):
     MODAL_GPU_ENABLED: bool = False  # kill switch: set False to force mock fallback
     MODAL_TOKEN_ID: str | None = None
     MODAL_TOKEN_SECRET: str | None = None
-    SMTP_HOST: str | None = None
-    SMTP_PORT: int | None = None
-    SMTP_USER: str | None = None
-    SMTP_PASSWORD: str | None = None
+    RESEND_API_KEY: str | None = None
+    RESEND_FROM_EMAIL: str = "ArXiv Lens <onboarding@resend.dev>"
     SLACK_WEBHOOK_URL: str | None = None
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
