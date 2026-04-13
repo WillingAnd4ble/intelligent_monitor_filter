@@ -17,8 +17,7 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-# Papers with agent_score >= this threshold are considered "top picks"
-TOP_PICK_THRESHOLD = 7.0
+# Legacy threshold removed — top picks are now marked via is_top_pick=True in the pipeline
 
 
 def _build_paper_summary(papers: List[Dict[str, Any]]) -> str:

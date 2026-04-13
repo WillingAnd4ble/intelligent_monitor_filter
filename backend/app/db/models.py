@@ -29,9 +29,11 @@ class UserSettings(Base):
     goal_embedding = Column(Vector(768), nullable=True)
     content_interest = Column(JSON, default=list)
     library_explanation_level = Column(String, default="professional")
+    notification_email = Column(String, nullable=True)  # Email for top-pick notifications (defaults to login email)
     notification_time = Column(String, nullable=True)
+    deep_scan_limit = Column(Integer, default=10)  # How many papers get Marker+Deep Reader (5/10/15)
     pdf_parser_mode = Column(String, default="pypdfium")
-    
+
     user = relationship("User", back_populates="settings")
 
 class FeedbackMemory(Base):
@@ -69,6 +71,8 @@ class UserPaper(Base):
     agent_score = Column(Float, nullable=True)
     agent_explanation = Column(Text, nullable=True)
     user_comment = Column(Text, nullable=True)
+    extracted_markdown = Column(Text, nullable=True)  # Cached Marker PDF output
+    is_top_pick = Column(Boolean, default=False)  # Top 3 flag for notifications
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("User", back_populates="papers")
