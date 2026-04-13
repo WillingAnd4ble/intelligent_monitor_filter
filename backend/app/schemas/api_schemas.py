@@ -15,7 +15,9 @@ class SettingsUpdateRequest(BaseModel):
     filtering_goal: Optional[str] = None
     content_interest: Optional[List[str]] = None
     library_explanation_level: Optional[str] = None
+    notification_email: Optional[str] = None
     notification_time: Optional[str] = None
+    deep_scan_limit: Optional[int] = None
     pdf_parser_mode: Optional[str] = None
 
 class PaperResponse(BaseModel):
@@ -27,6 +29,7 @@ class PaperResponse(BaseModel):
     agent_score: Optional[float] = None
     agent_explanation: Optional[str] = None
     source_url: Optional[str] = None
+    is_top_pick: bool = False
 
 class FeedStatsResponse(BaseModel):
     total_scraped_today: int = 0

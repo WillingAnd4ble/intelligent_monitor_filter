@@ -1,178 +1,171 @@
+"""
+Phase 1 LangGraph: Evaluator + Critique (abstract-only, no GPU).
+
+Each paper runs through this graph individually (pointwise).
+Evaluator scores + decides, Critique reviews borderline cases against feedback_memory.
+"""
+
 from langgraph.graph import StateGraph, END
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
-from app.agents.schemas import AgentState, EvaluatorOutput, CritiqueOutput, ExplainerOutput, RankerOutput
+from app.agents.schemas import AgentState, EvaluatorOutput, CritiqueOutput
 from app.core.config import settings
 
+
 def node_evaluator(state: AgentState):
-    """Fast funnel evaluating abstracts explicitly against mapped criteria."""
+    """Pointwise evaluator: abstract + distilled_criteria → decision + score."""
     llm = ChatOpenAI(
-        model="gpt-4o-mini", 
-        temperature=0.0, 
-        api_key=settings.OPENAI_API_KEY
+        model="gpt-4o-mini",
+        temperature=0.0,
+        api_key=settings.OPENAI_API_KEY,
     )
-    
-    structured_evaluator = llm.with_structured_output(EvaluatorOutput)
-    
+    structured = llm.with_structured_output(EvaluatorOutput)
+
     prompt = ChatPromptTemplate.from_messages([
         ("system", (
-            "You are an elite academic recommender AI. Evaluate incoming publications "
-            "strictly against the user's specific inclusion/exclusion bounds:\n"
-            "{criteria}\n\n"
-            "If paper inherently serves the central goal, output 'accept'.\n"
-            "If paper touches bounds broadly but isn't centrally focused, output 'borderline'.\n"
-            "If paper violates exclusions or misses entirely, output 'reject'."
+            "You are an academic paper screening AI. Evaluate this paper's abstract "
+            "against the user's research criteria.\n\n"
+            "CRITERIA:\n{criteria}\n\n"
+            "INSTRUCTIONS:\n"
+            "- Output 'accept' if the paper clearly matches the criteria.\n"
+            "- Output 'borderline' if it partially matches or you are uncertain. "
+            "When uncertain, PREFER 'borderline' over 'reject'.\n"
+            "- Output 'reject' ONLY if the paper clearly does not match.\n"
+            "- Assign a relevance score from 1.0 to 10.0.\n"
+            "- Write a brief reasoning trace in reasonbook (internal use only)."
         )),
-        ("human", "Evaluate the following extracted text:\n\n{text}")
+        ("human", "Abstract:\n\n{abstract}")
     ])
-    
-    chain = prompt | structured_evaluator
-    
+
     criteria_formatted = "\n- ".join(state.get("distilled_criteria", []))
-    target_eval_text = state.get("sectioned_text") or state.get("raw_abstract", "")
-    
-    result = chain.invoke({
-        "criteria": criteria_formatted, 
-        "text": target_eval_text
+    result = (prompt | structured).invoke({
+        "criteria": criteria_formatted,
+        "abstract": state.get("raw_abstract", ""),
     })
-    
+
     return {
         "evaluator_decision": result.decision,
-        "evaluator_reasonbook": result.reasonbook
+        "evaluator_score": result.score,
+        "evaluator_reasonbook": result.reasonbook,
     }
 
+
 def node_critique(state: AgentState):
-    """Double checks borderline traces actively against strict 'feedback_memory' overrides."""
+    """Reviews borderline papers against feedback_memory (user rejection history)."""
     memory = state.get("feedback_memory")
     if not memory or memory.strip() == "":
         return {
             "critique_decision": True,
-            "critique_reasonbook": "Auto-passed: No historical rejection memory exists to contradict Evaluator."
+            "critique_reasonbook": "Auto-passed: no rejection history exists.",
         }
-        
+
     llm = ChatOpenAI(
         model="gpt-4o-mini",
         temperature=0.0,
-        api_key=settings.OPENAI_API_KEY
+        api_key=settings.OPENAI_API_KEY,
     )
-    
-    structured_critique = llm.with_structured_output(CritiqueOutput)
-    
+    structured = llm.with_structured_output(CritiqueOutput)
+
     prompt = ChatPromptTemplate.from_messages([
         ("system", (
-            "You are an alignment AI tasked with overriding a junior agent's recommendation.\n"
-            "The junior agent was 'borderline' unsure about this paper for the following reason:\n"
+            "You are reviewing a borderline paper recommendation.\n\n"
+            "The evaluator was uncertain about this paper for this reason:\n"
             "{reasonbook}\n\n"
-            "CRITICAL DIRECTIVE:\n"
-            "The user historically absolutely DESPISES these elements: {memory}\n\n"
-            "If the junior agent's reason or the paper's abstract heavily features what the user despises, "
-            "you MUST output decision=False (Reject).\n"
-            "If it circumvents the despised elements safely, output decision=True (Accept)."
+            "The user has historically rejected papers with these characteristics:\n"
+            "{memory}\n\n"
+            "If this paper's abstract matches what the user dislikes, output decision=False (reject).\n"
+            "If it avoids the disliked elements, output decision=True (accept)."
         )),
-        ("human", "Evaluate against Memory. Abstract context:\n\n{text}")
+        ("human", "Abstract:\n\n{abstract}")
     ])
-    
-    chain = prompt | structured_critique
-    
-    target_eval_text = state.get("sectioned_text") or state.get("raw_abstract", "")
-    reasonbook = state.get("evaluator_reasonbook", "No specific reason provided.")
-    
-    result = chain.invoke({
-        "reasonbook": reasonbook,
+
+    result = (prompt | structured).invoke({
+        "reasonbook": state.get("evaluator_reasonbook", ""),
         "memory": memory,
-        "text": target_eval_text
+        "abstract": state.get("raw_abstract", ""),
     })
-    
+
     return {
         "critique_decision": result.decision,
-        "critique_reasonbook": result.reasonbook
+        "critique_reasonbook": result.reasonbook,
     }
 
-async def node_pdf_extractor(state: AgentState):
-    """Extracts full PDF text via MARKER on Modal GPU. Falls back to abstract."""
-    from app.worker.modal_client import marker_extract_pdf
 
-    pdf_url = state.get("pdf_url")
-    if pdf_url:
-        extracted = await marker_extract_pdf(pdf_url)
-        if extracted:
-            return {"extracted_pdf_text": extracted}
-
-    # Fallback: use abstract if no PDF URL or extraction failed
-    return {"extracted_pdf_text": state.get("raw_abstract", "")}
-
-def node_section_classifier(state: AgentState):
-    """Regex + LLM Slices grouping document context onto specific User bounds."""
-    # MOCKED: Passthrough locally reducing GPU latency boundaries
-    return {"sectioned_text": state.get("extracted_pdf_text", "")}
-
-def node_explainer(state: AgentState):
-    """Compiles the final library explanation rationale natively saving caching logic."""
-    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.7, api_key=settings.OPENAI_API_KEY)
-    structured = llm.with_structured_output(ExplainerOutput)
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", "Write a maximum 3 sentence explanation focusing on why this text strictly matches user criteria: {criteria}"),
-        ("human", "Text Context:\n{text}")
-    ])
-    res = (prompt | structured).invoke({"criteria": "\n".join(state.get("distilled_criteria", [])), "text": state.get("sectioned_text") or state.get("raw_abstract", "")})
-    return {"final_explanation": res.explanation}
-
-def node_ranker(state: AgentState):
-    """Scores final qualitative boundaries outputting numeric bounds."""
-    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.0, api_key=settings.OPENAI_API_KEY)
-    structured = llm.with_structured_output(RankerOutput)
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", "Score this abstract mapping relevance to criteria (1.0 to 10.0 float) solely based on logical matching intensity: {criteria}"),
-        ("human", "{text}")
-    ])
-    res = (prompt | structured).invoke({"criteria": "\n".join(state.get("distilled_criteria", [])), "text": state.get("sectioned_text") or state.get("raw_abstract", "")})
-    return {"agent_score": res.score}
-
-def route_evaluator_decision(state: AgentState):
+def route_evaluator(state: AgentState):
     decision = state.get("evaluator_decision")
     if decision == "accept":
-        return "pdf_extractor" 
+        return END
     elif decision == "borderline":
         return "critique"
-    return END
+    return END  # reject
 
-def route_critique_decision(state: AgentState):
-    if state.get("critique_decision") is True:
-        return "pdf_extractor"
-    return END
 
+def route_critique(state: AgentState):
+    return END  # always ends — decision stored in state
+
+
+# Build Phase 1 graph
 workflow = StateGraph(AgentState)
-
 workflow.add_node("evaluator", node_evaluator)
 workflow.add_node("critique", node_critique)
-workflow.add_node("pdf_extractor", node_pdf_extractor)
-workflow.add_node("section_classifier", node_section_classifier)
-workflow.add_node("explainer", node_explainer)
-workflow.add_node("ranker", node_ranker)
-
 workflow.set_entry_point("evaluator")
 
 workflow.add_conditional_edges(
     "evaluator",
-    route_evaluator_decision,
-    {
-        "pdf_extractor": "pdf_extractor",
-        "critique": "critique",
-        END: END
-    }
+    route_evaluator,
+    {"critique": "critique", END: END},
 )
-workflow.add_conditional_edges(
-    "critique",
-    route_critique_decision,
-    {
-        "pdf_extractor": "pdf_extractor",
-        END: END
+workflow.add_edge("critique", END)
+
+phase1_graph = workflow.compile()
+
+
+async def run_deep_reader(markdown: str, distilled_criteria: list, feedback_memory: str) -> dict:
+    """Phase 2: Deep Reader — full text + criteria + feedback → decision + score + explanation.
+
+    Returns dict with keys: decision, score, explanation.
+    """
+    from app.agents.schemas import DeepReaderOutput
+
+    llm = ChatOpenAI(
+        model="gpt-4o-mini",
+        temperature=0.3,
+        api_key=settings.OPENAI_API_KEY,
+    )
+    structured = llm.with_structured_output(DeepReaderOutput)
+
+    criteria_formatted = "\n- ".join(distilled_criteria)
+
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", (
+            "You are an expert academic paper analyst. Read the full paper text and evaluate "
+            "it against the user's research criteria.\n\n"
+            "CRITERIA:\n{criteria}\n\n"
+            "USER REJECTION HISTORY:\n{feedback_memory}\n\n"
+            "INSTRUCTIONS:\n"
+            "1. Determine if this paper is truly relevant based on its FULL content "
+            "(not just abstract). Output 'accept' or 'reject'.\n"
+            "2. Assign a final relevance score from 1.0 to 10.0.\n"
+            "3. Write a 2-3 sentence explanation of WHY this paper is relevant to the user. "
+            "This will be shown directly to the user in their feed.\n"
+            "- If the paper scored well on abstract but the full text reveals it's not actually "
+            "relevant, output 'reject' with a low score.\n"
+            "- Papers with score below 5.0 will be filtered out."
+        )),
+        ("human", "Full paper text:\n\n{text}")
+    ])
+
+    # Truncate markdown to ~30k chars to stay within context limits
+    truncated = markdown[:30000] if len(markdown) > 30000 else markdown
+
+    result = (prompt | structured).invoke({
+        "criteria": criteria_formatted,
+        "feedback_memory": feedback_memory or "No rejection history.",
+        "text": truncated,
+    })
+
+    return {
+        "decision": result.decision,
+        "score": result.score,
+        "explanation": result.explanation,
     }
-)
-
-workflow.add_edge("pdf_extractor", "section_classifier")
-workflow.add_edge("section_classifier", "explainer")
-workflow.add_edge("explainer", "ranker")
-workflow.add_edge("ranker", END)
-
-app = workflow.compile()

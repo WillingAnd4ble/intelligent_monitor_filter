@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from typing import List
-from datetime import date, timedelta, datetime, timezone
+from datetime import date, timedelta, datetime, timezone  # used by debug endpoint
 import uuid
 
 from app.db.database import get_db
@@ -40,7 +40,8 @@ async def get_feed(
                 abstract=paper.abstract,
                 agent_score=user_paper.agent_score,
                 agent_explanation=user_paper.agent_explanation,
-                source_url=paper.source_url
+                source_url=paper.source_url,
+                is_top_pick=user_paper.is_top_pick or False
             )
         )
         
@@ -51,35 +52,23 @@ async def get_feed_stats(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_db)
 ):
-    """Outputs real statistics from DB for the current user's pipeline run."""
-    # Yesterday's date range (pipeline scrapes previous day's papers)
-    yesterday = date.today() - timedelta(days=1)
-    day_start = datetime(yesterday.year, yesterday.month, yesterday.day, tzinfo=timezone.utc)
-    day_end = day_start + timedelta(days=1)
-
-    # Total papers scraped (ingested into Paper table from yesterday)
-    scraped_result = await session.execute(
-        select(func.count(Paper.id))
-        .where(Paper.published_at >= day_start)
-        .where(Paper.published_at < day_end)
-    )
+    """Outputs all-time statistics for this user."""
+    # Total papers in the database
+    scraped_result = await session.execute(select(func.count(Paper.id)))
     total_scraped = scraped_result.scalar() or 0
 
-    # Papers evaluated by agent for this user (all UserPaper records created today)
-    today_start = datetime(date.today().year, date.today().month, date.today().day, tzinfo=timezone.utc)
+    # All papers evaluated by agent for this user (all UserPaper records ever)
     evaluated_result = await session.execute(
         select(func.count(UserPaper.id))
         .where(UserPaper.user_id == user.id)
-        .where(UserPaper.created_at >= today_start)
     )
     evaluated = evaluated_result.scalar() or 0
 
-    # Recommended = papers that passed the agent pipeline (status='feed', created today)
+    # Recommended = papers currently in feed
     recommended_result = await session.execute(
         select(func.count(UserPaper.id))
         .where(UserPaper.user_id == user.id)
         .where(UserPaper.status == "feed")
-        .where(UserPaper.created_at >= today_start)
     )
     recommended = recommended_result.scalar() or 0
 
