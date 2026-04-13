@@ -22,7 +22,9 @@ function emptySettings(): UserSettings {
     authors: [],
     content_interest: [],
     library_explanation_level: "professional",
+    notification_email: null,
     notification_time: null,
+    deep_scan_limit: 10,
     pdf_parser_mode: "pypdfium",
   };
 }
@@ -315,16 +317,71 @@ export function TerminalClient() {
           {tab === "account" && (
             <section className="rounded-lg border border-stone-200 bg-white p-6 shadow-card">
               <h2 className="text-lg font-semibold text-sage-700">Account</h2>
-              <p className="mt-2 text-sm text-ink-secondary">
-                Email (read-only):{" "}
-                <span className="font-mono">
-                  {process.env.NEXT_PUBLIC_DEMO_EMAIL ?? "—"}
-                </span>
+
+              <h3 className="mt-6 text-base font-semibold text-sage-700">
+                Notification email
+              </h3>
+              <p className="mt-1 text-sm text-ink-muted">
+                Top-pick papers (score ≥ 7.0) will be sent to this email after
+                each pipeline run.
               </p>
-              <p className="mt-4 text-sm text-ink-muted">
-                Password change is not exposed in the API yet — this section is
-                informational.
+              <input
+                type="email"
+                className="mt-2 w-full max-w-sm rounded-md border border-stone-200 px-3 py-2 text-sm outline-none ring-sage-500 focus:ring-2"
+                placeholder="your@email.com"
+                value={s.notification_email ?? ""}
+                onChange={(e) =>
+                  setS((prev) => ({
+                    ...prev,
+                    notification_email: e.target.value,
+                  }))
+                }
+              />
+
+              <h3 className="mt-8 text-base font-semibold text-sage-700">
+                Deep scan limit
+              </h3>
+              <p className="mt-1 text-sm text-ink-muted">
+                How many top papers get full-text analysis per pipeline run.
               </p>
+              <div className="mt-3 flex gap-3">
+                {[5, 10, 15].map((n) => (
+                  <label
+                    key={n}
+                    className={cn(
+                      "flex cursor-pointer items-center gap-2 rounded-md border px-4 py-2.5 text-sm font-medium",
+                      s.deep_scan_limit === n
+                        ? "border-sage-500 bg-sage-50 text-sage-700"
+                        : "border-stone-200 text-ink-secondary hover:bg-stone-50",
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name="deep_scan_limit"
+                      className="sr-only"
+                      checked={s.deep_scan_limit === n}
+                      onChange={() =>
+                        setS((prev) => ({ ...prev, deep_scan_limit: n }))
+                      }
+                    />
+                    Top {n}
+                  </label>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                className="mt-6 w-full rounded-md bg-sage-500 py-2.5 text-sm font-semibold text-white hover:bg-sage-700"
+                onClick={() =>
+                  save({
+                    notification_email: s.notification_email,
+                    deep_scan_limit: s.deep_scan_limit,
+                  })
+                }
+                disabled={mutation.isPending}
+              >
+                Save account settings
+              </button>
             </section>
           )}
         </div>
