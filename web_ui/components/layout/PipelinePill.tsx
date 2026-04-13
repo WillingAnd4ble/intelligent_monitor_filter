@@ -31,7 +31,7 @@ export function PipelinePill() {
         {err
           ? "Error"
           : running
-            ? `${stateLabel} · ${progress}%`
+            ? `${stateLabel}${progress > 0 ? ` · ${progress}%` : ""}`
             : stateLabel}
       </span>
     </div>

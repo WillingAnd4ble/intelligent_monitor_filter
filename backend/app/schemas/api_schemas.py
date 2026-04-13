@@ -54,4 +54,5 @@ class ExplainResponse(BaseModel):
 class PipelineStatusResponse(BaseModel):
     task_id: str
     state: str
-    progress: Optional[str] = None
+    progress: int = 0
+    stage: str = ""

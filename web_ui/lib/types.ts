@@ -7,6 +7,7 @@ export type PaperListItem = {
   agent_score: number | null;
   agent_explanation: string | null;
   source_url: string;
+  is_top_pick: boolean;
 };
 
 export type FeedStats = {
@@ -16,14 +17,18 @@ export type FeedStats = {
 };
 
 export type ExplainResponse = {
-  level: string;
-  explanation: string;
+  status: "ready" | "processing" | "error";
+  level?: string;
+  explanation?: string;
+  task_id?: string;
+  detail?: string;
 };
 
 export type PipelineTaskStatus = {
   task_id: string;
   state: string;
   progress: number;
+  stage: string;
 };
 
 export type ApiErrorBody = {

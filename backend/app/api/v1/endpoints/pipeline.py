@@ -39,10 +39,19 @@ async def get_pipeline_status(
 ):
     """Returns current state of a Celery pipeline task."""
     result = celery_app.AsyncResult(task_id)
+    progress = 0
+    stage = ""
+    if isinstance(result.info, dict):
+        progress = result.info.get("progress", 0)
+        stage = result.info.get("stage", "")
+    elif result.state == "SUCCESS":
+        progress = 100
+        stage = "Complete"
     return PipelineStatusResponse(
         task_id=task_id,
         state=result.state,
-        progress=str(result.info) if result.info else None
+        progress=progress,
+        stage=stage,
     )
 
 @router.post("/{task_id}/cancel", status_code=status.HTTP_200_OK)
