@@ -9,7 +9,8 @@ def data_root() -> Path:
     env = os.environ.get("BENCHMARK_DATA_DIR")
     if env:
         return Path(env)
-    # default: testing/data relative to repo root
+    # Assumes this file lives at testing/benchmark/lib/paths.py;
+    # parents[3] climbs to the repo root.
     return Path(__file__).resolve().parents[3] / "testing" / "data"
 
 
