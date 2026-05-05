@@ -115,3 +115,11 @@ htmlcov/
 # Misc
 # ========================
 .vercel
+
+# ========================
+# Benchmark harness data
+# ========================
+testing/data/llm_cache/
+testing/data/labels/
+testing/data/results/
+testing/.env.benchmark
