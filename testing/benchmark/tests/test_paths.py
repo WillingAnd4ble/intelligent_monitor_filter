@@ -1,5 +1,4 @@
 from pathlib import Path
-import os
 from benchmark.lib import paths
 
 def test_data_root_uses_env_var(monkeypatch, tmp_path):
