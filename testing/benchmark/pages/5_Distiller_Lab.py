@@ -41,8 +41,26 @@ with st.form("distiller_inputs"):
         "gpt-4o-mini",
         "claude-haiku-4-5-20251001",
         "gpt-5.4-nano-2026-03-17",
+        # OpenRouter shortcuts — any model id with '/' is auto-routed.
+        "anthropic/claude-3.5-sonnet",
+        "anthropic/claude-3.5-haiku",
+        "openai/gpt-4o",
+        "google/gemini-flash-1.5",
+        "meta-llama/llama-3.3-70b-instruct",
+        "deepseek/deepseek-chat",
+        "qwen/qwen-2.5-72b-instruct",
+        "mistralai/mistral-large",
     ]
-    selected_models = st.multiselect("Models", model_choices, default=model_choices)
+    selected_models = st.multiselect("Models", model_choices,
+                                     default=["gpt-4o-mini",
+                                              "claude-haiku-4-5-20251001",
+                                              "gpt-5.4-nano-2026-03-17"])
+    extra_str = st.text_area(
+        "Additional OpenRouter model ids (one per line, e.g. anthropic/claude-3-opus)",
+        value="", height=70,
+    )
+    extras = [m.strip() for m in extra_str.splitlines() if m.strip()]
+    selected_models = list(dict.fromkeys(selected_models + extras))
 
     st.markdown("**Prompt (editable — sandboxed, does not affect prod)**")
     sys_prompt = st.text_area(

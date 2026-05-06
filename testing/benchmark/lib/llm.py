@@ -1,9 +1,18 @@
 """Multi-provider LLM call factory.
 
+Routing rules for `model` strings:
+- Contains '/'  (e.g. 'anthropic/claude-3.5-sonnet')  -> OpenRouter
+- Starts with 'claude-'                                -> Anthropic direct
+- Anything else                                        -> OpenAI direct
+The OpenRouter path uses ChatOpenAI with a custom base_url, exploiting
+OpenRouter's OpenAI-compatible API. Requires OPENROUTER_API_KEY in env.
+
 Returns parsed structured output + (tokens_in, tokens_out, latency_ms).
-Used by runner.py for evaluator/critique/deep_reader calls.
+Used by runner.py for evaluator/critique/deep_reader calls and by Page 5
+for distiller experiments.
 """
 
+import os
 import time
 from typing import Tuple, Type
 
@@ -13,7 +22,32 @@ from langchain_openai import ChatOpenAI
 from pydantic import BaseModel
 
 
+OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+
+
+def is_openrouter_model(model: str) -> bool:
+    return "/" in model
+
+
 def _build_llm(model: str, temperature: float = 0.0):
+    if is_openrouter_model(model):
+        api_key = os.environ.get("OPENROUTER_API_KEY")
+        if not api_key:
+            raise RuntimeError(
+                f"Model '{model}' looks like an OpenRouter id but "
+                "OPENROUTER_API_KEY is not set. Add it to testing/.env.benchmark."
+            )
+        return ChatOpenAI(
+            model=model,
+            temperature=temperature,
+            base_url=OPENROUTER_BASE_URL,
+            api_key=api_key,
+            default_headers={
+                # Optional but recommended by OpenRouter for analytics
+                "HTTP-Referer": "https://localhost/benchmark-harness",
+                "X-Title": "arXiv Filtering Benchmark",
+            },
+        )
     if model.startswith("claude-"):
         return ChatAnthropic(model=model, temperature=temperature)
     # Default: OpenAI (covers gpt-4o-mini and gpt-5.4-nano-*)
