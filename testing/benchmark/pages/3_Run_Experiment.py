@@ -49,17 +49,16 @@ if cols[4].button("Exp 5 — Deep Reader"): preset = "exp5"
 st.subheader("Toggle config")
 
 model_choices = [
+    # Direct providers
     "gpt-4o-mini",
     "claude-haiku-4-5-20251001",
     "gpt-5.4-nano-2026-03-17",
-    # OpenRouter shortcuts — any id containing '/' routes through OpenRouter
-    # automatically. Requires OPENROUTER_API_KEY in env.
-    "anthropic/claude-3.5-sonnet",
-    "anthropic/claude-3.5-haiku",
-    "openai/gpt-4o",
-    "google/gemini-flash-1.5",
-    "meta-llama/llama-3.3-70b-instruct",
-    "deepseek/deepseek-chat",
+    # OpenRouter — any id with '/' is auto-routed via OPENROUTER_API_KEY.
+    "google/gemini-2.5-flash",
+    "google/gemini-3-flash-preview",
+    "google/gemini-3.1-flash-lite-preview",
+    "deepseek/deepseek-v4-flash",
+    "qwen/qwen3.6-flash",
     "(custom — type below)",
 ]
 default_model = "gpt-4o-mini"
