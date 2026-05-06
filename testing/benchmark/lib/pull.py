@@ -5,6 +5,7 @@ SPECTER2 embedding for the goal is computed via Modal GPU on demand.
 """
 
 import os
+import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -69,38 +70,77 @@ async def embed_goal(raw_goal: str, goal_id: str) -> List[float]:
     return embeddings[0]
 
 
-async def pull_bm25(session: AsyncSession, lexical_query: str, k: int = 30,
-                    paper_ids: Optional[List[str]] = None) -> List[CandidatePaper]:
+def _or_query(lexical_query: str) -> str:
+    """Build a to_tsquery OR-string from free-form terms, e.g.
+    'llm hybrid attack' -> 'llm | hybrid | attack'. Drops words shorter
+    than 3 chars and dedupes."""
+    seen: list[str] = []
+    for tok in re.findall(r"[A-Za-z][A-Za-z0-9]{2,}", lexical_query):
+        t = tok.lower()
+        if t not in seen:
+            seen.append(t)
+    return " | ".join(seen)
+
+
+async def _bm25_strict(session: AsyncSession, lexical_query: str, k: int,
+                       paper_ids: Optional[List[str]]):
+    base = """
+        SELECT p.id, p.title, p.abstract, p.authors, p.pdf_url, p.source_url, p.published_at,
+               ts_rank_cd(p.search_vector, websearch_to_tsquery('english', :q)) AS lex_score,
+               EXISTS (
+                 SELECT 1 FROM user_papers up
+                 WHERE up.paper_id = p.id AND up.extracted_markdown IS NOT NULL
+               ) AS has_md
+        FROM papers p
+        WHERE p.search_vector @@ websearch_to_tsquery('english', :q)
+          {id_filter}
+        ORDER BY lex_score DESC
+        LIMIT :k
+    """
     if paper_ids is None:
-        stmt = text("""
-            SELECT p.id, p.title, p.abstract, p.authors, p.pdf_url, p.source_url, p.published_at,
-                   ts_rank_cd(p.search_vector, websearch_to_tsquery('english', :q)) AS lex_score,
-                   EXISTS (
-                     SELECT 1 FROM user_papers up
-                     WHERE up.paper_id = p.id AND up.extracted_markdown IS NOT NULL
-                   ) AS has_md
-            FROM papers p
-            WHERE p.search_vector @@ websearch_to_tsquery('english', :q)
-            ORDER BY lex_score DESC
-            LIMIT :k
-        """)
+        stmt = text(base.format(id_filter=""))
         params = {"q": lexical_query, "k": k}
     else:
-        stmt = text("""
-            SELECT p.id, p.title, p.abstract, p.authors, p.pdf_url, p.source_url, p.published_at,
-                   ts_rank_cd(p.search_vector, websearch_to_tsquery('english', :q)) AS lex_score,
-                   EXISTS (
-                     SELECT 1 FROM user_papers up
-                     WHERE up.paper_id = p.id AND up.extracted_markdown IS NOT NULL
-                   ) AS has_md
-            FROM papers p
-            WHERE p.search_vector @@ websearch_to_tsquery('english', :q)
-              AND p.id = ANY(:ids)
-            ORDER BY lex_score DESC
-            LIMIT :k
-        """)
+        stmt = text(base.format(id_filter="AND p.id = ANY(:ids)"))
         params = {"q": lexical_query, "k": k, "ids": list(paper_ids)}
-    rows = (await session.execute(stmt, params)).mappings().fetchall()
+    return (await session.execute(stmt, params)).mappings().fetchall()
+
+
+async def _bm25_loose(session: AsyncSession, or_query: str, k: int,
+                      paper_ids: Optional[List[str]]):
+    base = """
+        SELECT p.id, p.title, p.abstract, p.authors, p.pdf_url, p.source_url, p.published_at,
+               ts_rank_cd(p.search_vector, to_tsquery('english', :q)) AS lex_score,
+               EXISTS (
+                 SELECT 1 FROM user_papers up
+                 WHERE up.paper_id = p.id AND up.extracted_markdown IS NOT NULL
+               ) AS has_md
+        FROM papers p
+        WHERE p.search_vector @@ to_tsquery('english', :q)
+          {id_filter}
+        ORDER BY lex_score DESC
+        LIMIT :k
+    """
+    if paper_ids is None:
+        stmt = text(base.format(id_filter=""))
+        params = {"q": or_query, "k": k}
+    else:
+        stmt = text(base.format(id_filter="AND p.id = ANY(:ids)"))
+        params = {"q": or_query, "k": k, "ids": list(paper_ids)}
+    return (await session.execute(stmt, params)).mappings().fetchall()
+
+
+async def pull_bm25(session: AsyncSession, lexical_query: str, k: int = 30,
+                    paper_ids: Optional[List[str]] = None) -> List[CandidatePaper]:
+    """BM25 retrieval. Tries strict AND first; falls back to OR over terms
+    if zero rows match. The fallback prevents empty result sets on small
+    corpora while still ranking the most-overlapping papers highest.
+    """
+    rows = await _bm25_strict(session, lexical_query, k, paper_ids)
+    if not rows:
+        or_q = _or_query(lexical_query)
+        if or_q:
+            rows = await _bm25_loose(session, or_q, k, paper_ids)
     return [
         CandidatePaper(
             paper_id=r["id"], title=r["title"], abstract=r["abstract"],
