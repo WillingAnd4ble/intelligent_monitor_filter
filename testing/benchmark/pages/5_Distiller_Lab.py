@@ -105,23 +105,27 @@ if submitted:
 
     status.empty()
 
-    # --- side-by-side display ---
-    cols = st.columns(len(results))
-    for col, (model, r) in zip(cols, results.items()):
-        with col:
-            st.subheader(model)
-            if r.error:
-                st.error(r.error)
-                continue
-            st.markdown("**Criteria**")
-            for j, c in enumerate(r.distilled_criteria, 1):
-                st.write(f"{j}. {c}")
-            st.markdown("**Lexical query**")
-            st.code(r.lexical_query)
-            st.caption(
-                f"in {r.tokens_in} / out {r.tokens_out} tokens | "
-                f"{r.latency_ms:.0f} ms | ${r.cost_usd:.5f}"
-            )
+    # --- side-by-side display, 3 per row ---
+    PER_ROW = 3
+    items = list(results.items())
+    for row_start in range(0, len(items), PER_ROW):
+        row = items[row_start:row_start + PER_ROW]
+        cols = st.columns(PER_ROW)  # fixed-width columns; trailing cells stay empty
+        for col, (model, r) in zip(cols, row):
+            with col:
+                st.subheader(model)
+                if r.error:
+                    st.error(r.error)
+                    continue
+                st.markdown("**Criteria**")
+                for j, c in enumerate(r.distilled_criteria, 1):
+                    st.write(f"{j}. {c}")
+                st.markdown("**Lexical query**")
+                st.code(r.lexical_query)
+                st.caption(
+                    f"in {r.tokens_in} / out {r.tokens_out} tokens | "
+                    f"{r.latency_ms:.0f} ms | ${r.cost_usd:.5f}"
+                )
 
     # --- save ---
     st.divider()
