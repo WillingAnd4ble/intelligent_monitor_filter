@@ -26,11 +26,21 @@ from benchmark.lib.schemas import CandidatePaper, CandidatesFile
 
 
 def _engine():
+    """Pick the DB URL: prefer BENCHMARK_DB_URL, fall back to DATABASE_URL.
+
+    Phase 1 reuses the backend's prod connection. Phase 2 will introduce a
+    dedicated readonly_user; until then, BENCHMARK_DB_URL stays optional.
+    The placeholder value from .env.benchmark.example (containing
+    ``readonly_user:password``) is treated as unset.
+    """
     url = os.environ.get("BENCHMARK_DB_URL")
+    if not url or "readonly_user:password" in url:
+        url = os.environ.get("DATABASE_URL")
     if not url:
         raise RuntimeError(
-            "BENCHMARK_DB_URL is unset. Copy testing/.env.benchmark.example "
-            "to testing/.env.benchmark and load it before running."
+            "Neither BENCHMARK_DB_URL nor DATABASE_URL is set. "
+            "Ensure backend/.env has DATABASE_URL or set BENCHMARK_DB_URL "
+            "in testing/.env.benchmark."
         )
     return create_async_engine(url, future=True, pool_pre_ping=True)
 
