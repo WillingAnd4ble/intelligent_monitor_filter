@@ -49,8 +49,12 @@ async def smoke_test_db_access() -> int:
 
 
 async def embed_goal(raw_goal: str, goal_id: str) -> List[float]:
-    """Compute SPECTER2 embedding for the goal text. Used for SPECTER2 + RRF retrievers."""
-    pairs = [(goal_id, raw_goal)]
+    """Compute SPECTER2 embedding for the goal text. Used for SPECTER2 + RRF retrievers.
+
+    The backend SPECTER2 wrapper expects a list of {"title": ..., "abstract": ...}
+    dicts. Synthesize one with the goal text in the abstract slot.
+    """
+    pairs = [{"title": goal_id, "abstract": raw_goal}]
     embeddings = await specter2_embed_batch(pairs)
     return embeddings[0]
 
