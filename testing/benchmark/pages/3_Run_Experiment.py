@@ -48,7 +48,20 @@ if cols[4].button("Exp 5 — Deep Reader"): preset = "exp5"
 
 st.subheader("Toggle config")
 
-model_choices = ["gpt-4o-mini", "claude-haiku-4-5-20251001", "gpt-5.4-nano-2026-03-17"]
+model_choices = [
+    "gpt-4o-mini",
+    "claude-haiku-4-5-20251001",
+    "gpt-5.4-nano-2026-03-17",
+    # OpenRouter shortcuts — any id containing '/' routes through OpenRouter
+    # automatically. Requires OPENROUTER_API_KEY in env.
+    "anthropic/claude-3.5-sonnet",
+    "anthropic/claude-3.5-haiku",
+    "openai/gpt-4o",
+    "google/gemini-flash-1.5",
+    "meta-llama/llama-3.3-70b-instruct",
+    "deepseek/deepseek-chat",
+    "(custom — type below)",
+]
 default_model = "gpt-4o-mini"
 critique_default = True
 deep_reader_default = True
@@ -66,7 +79,13 @@ elif preset == "exp4":
 elif preset == "exp5":
     st.info("Exp 5 — run with Deep Reader=ON, then again with Deep Reader=OFF.")
 
-model = st.selectbox("Model", model_choices, index=model_choices.index(default_model))
+model_pick = st.selectbox("Model", model_choices, index=model_choices.index(default_model))
+if model_pick == "(custom — type below)":
+    model = st.text_input("Custom model id (OpenRouter or otherwise)", value="").strip()
+    if not model:
+        st.info("Type a model id above before running.")
+else:
+    model = model_pick
 critique = st.checkbox("Critique enabled", value=critique_default)
 deep_reader = st.checkbox("Deep Reader enabled", value=deep_reader_default)
 memory = st.selectbox("Feedback memory", ["empty", "seeded"], index=0 if memory_default == "empty" else 1)
