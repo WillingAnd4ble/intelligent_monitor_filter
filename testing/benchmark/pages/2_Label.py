@@ -51,6 +51,11 @@ if not cp_path.exists():
 cf = CandidatesFile.model_validate_json(cp_path.read_text(encoding="utf-8"))
 lf = load_labels(goal_id)
 
+st.success(
+    f"Labels auto-save to `{paths.labels_path(goal_id)}` after every Save & Next. "
+    "Close the tab anytime — your progress is preserved."
+)
+
 st.session_state.setdefault(f"session_start_{goal_id}", time.time())
 elapsed = int(time.time() - st.session_state[f"session_start_{goal_id}"])
 mm, ss = divmod(elapsed, 60)
@@ -104,3 +109,25 @@ if st.button("Save & Next"):
     )
     save_labels(lf)
     st.rerun()
+
+with st.expander("Danger zone — discard labels for this goal"):
+    st.caption(
+        "Use this if you realize the goal was vague or wrong and want to abandon "
+        "the labeled set. The goal file itself stays frozen — only the labels JSON "
+        "is removed."
+    )
+    confirm = st.text_input(
+        f"Type the goal_id to confirm deletion ({goal_id})",
+        key=f"confirm_delete_{goal_id}",
+    )
+    if st.button("Delete labels file", type="primary"):
+        if confirm == goal_id:
+            lp = paths.labels_path(goal_id)
+            if lp.exists():
+                lp.unlink()
+                st.success(f"Deleted {lp}. Goal file preserved.")
+                st.rerun()
+            else:
+                st.info("No labels file to delete.")
+        else:
+            st.error("goal_id did not match — nothing deleted.")
