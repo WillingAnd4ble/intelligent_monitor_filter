@@ -1,35 +1,38 @@
-"""GoalDistiller wrapper: distill, freeze, persist."""
+"""GoalDistiller wrapper: distill (any model), freeze, persist.
+
+Distillation routes through the harness's lib/llm.py + lib/prompts.py so any
+supported model (direct OpenAI/Anthropic or any OpenRouter id) can be used
+to produce the criteria. The backend's hardcoded gpt-4o-mini distiller is
+left untouched for the prod pipeline.
+"""
 
 import math
-import sys
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import List, Tuple
 
-# Allow importing from ../backend
-_BACKEND = Path(__file__).resolve().parents[3] / "backend"
-if str(_BACKEND) not in sys.path:
-    sys.path.insert(0, str(_BACKEND))
-
-from app.agents.distiller import run_goal_distiller  # type: ignore
-
-from benchmark.lib import paths
+from benchmark.lib import distiller_lab, paths, prompts
 from benchmark.lib.schemas import Criterion, GoalFile, ScoringRule
 
 
-def distill(raw_goal: str, categories: List[str] | None = None,
+def distill(raw_goal: str, model: str = "gpt-4o-mini",
+            categories: List[str] | None = None,
             topics: List[str] | None = None,
             content_interest: List[str] | None = None) -> Tuple[List[Criterion], str]:
-    """Run the GoalDistiller. Returns (criteria, lexical_query)."""
-    out = run_goal_distiller(
+    """Run the GoalDistiller via any chosen model. Returns (criteria, lexical_query)."""
+    result = distiller_lab.run_one(
+        model=model,
+        system_prompt=prompts.DISTILLER_SYSTEM,
+        human_prompt=prompts.DISTILLER_HUMAN,
+        raw_goal=raw_goal,
         categories=categories or [],
         topics=topics or [],
         content_interest=content_interest or [],
-        filtering_goal=raw_goal,
     )
+    if result.error:
+        raise RuntimeError(f"Distillation failed: {result.error}")
     criteria = [Criterion(id=f"c{i+1}", text=t)
-                for i, t in enumerate(out.distilled_criteria)]
-    return criteria, out.lexical_query
+                for i, t in enumerate(result.distilled_criteria)]
+    return criteria, result.lexical_query
 
 
 def freeze(goal_id: str, raw_goal: str, criteria: List[Criterion],

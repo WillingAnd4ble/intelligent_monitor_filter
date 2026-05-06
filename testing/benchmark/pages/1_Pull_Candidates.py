@@ -42,10 +42,25 @@ with st.expander("Dataset partition", expanded=True):
                 except FileExistsError as e:
                     st.error(str(e))
 
+DISTILL_MODEL_CHOICES = [
+    "gpt-4o-mini",
+    "claude-haiku-4-5-20251001",
+    "gpt-5.4-nano-2026-03-17",
+    "google/gemini-2.5-flash",
+    "google/gemini-3-flash-preview",
+    "google/gemini-3.1-flash-lite-preview",
+    "deepseek/deepseek-v4-flash",
+    "qwen/qwen3.6-flash",
+]
+
 with st.form("goal_form"):
     goal_id = st.text_input("goal_id (slug, e.g. security_v1)")
     raw_goal = st.text_area("Raw filtering goal", height=160)
     top_k = st.number_input("Top K", min_value=5, max_value=100, value=30, step=5)
+    distill_model = st.selectbox(
+        "Distillation model (also stamped on the frozen goal)",
+        DISTILL_MODEL_CHOICES, index=0,
+    )
     distill_clicked = st.form_submit_button("Distill & Preview")
 
 if distill_clicked:
@@ -54,13 +69,20 @@ if distill_clicked:
     elif paths.goal_path(goal_id).exists():
         st.error(f"{goal_id}.json already exists — frozen goals are immutable. Use a new goal_id.")
     else:
-        with st.spinner("Distilling..."):
-            criteria, lexical_query = distill.distill(raw_goal=raw_goal)
+        with st.spinner(f"Distilling with {distill_model}..."):
+            try:
+                criteria, lexical_query = distill.distill(
+                    raw_goal=raw_goal, model=distill_model
+                )
+            except Exception as e:
+                st.error(f"Distillation failed: {e}")
+                st.stop()
         st.session_state.draft_criteria = [c.model_dump() for c in criteria]
         st.session_state.draft_lexical = lexical_query
         st.session_state.draft_goal_id = goal_id
         st.session_state.draft_raw_goal = raw_goal
         st.session_state.draft_top_k = int(top_k)
+        st.session_state.draft_distill_model = distill_model
 
 if "draft_criteria" in st.session_state:
     st.subheader("Distilled criteria — edit if needed")
@@ -73,8 +95,15 @@ if "draft_criteria" in st.session_state:
     col_a, col_b = st.columns([1, 3])
     with col_a:
         if st.button("Re-distill"):
-            with st.spinner("Re-distilling..."):
-                criteria, lexical_query = distill.distill(raw_goal=st.session_state.draft_raw_goal)
+            with st.spinner(f"Re-distilling with {st.session_state.draft_distill_model}..."):
+                try:
+                    criteria, lexical_query = distill.distill(
+                        raw_goal=st.session_state.draft_raw_goal,
+                        model=st.session_state.draft_distill_model,
+                    )
+                except Exception as e:
+                    st.error(f"Re-distill failed: {e}")
+                    st.stop()
             st.session_state.draft_criteria = [c.model_dump() for c in criteria]
             st.session_state.draft_lexical = lexical_query
             st.rerun()
@@ -87,6 +116,7 @@ if "draft_criteria" in st.session_state:
                     raw_goal=st.session_state.draft_raw_goal,
                     criteria=criteria_objs,
                     lexical_query=new_lex,
+                    distiller_model=st.session_state.draft_distill_model,
                     dataset_id=chosen_dataset_id,
                 )
                 st.success(f"Frozen: {paths.goal_path(gf.goal_id)}"
@@ -110,6 +140,6 @@ if "draft_criteria" in st.session_state:
                     st.success(f"{retriever}: {len(cf.papers)} papers → {paths.candidates_path(gf.goal_id, retriever)}")
 
             for k in ("draft_criteria", "draft_lexical", "draft_goal_id",
-                      "draft_raw_goal", "draft_top_k"):
+                      "draft_raw_goal", "draft_top_k", "draft_distill_model"):
                 st.session_state.pop(k, None)
             st.balloons()
