@@ -182,7 +182,10 @@ def _fetch_markdown(paper_id: str) -> Optional[str]:
     import os
 
     async def _go() -> Optional[str]:
-        engine = create_async_engine(os.environ["BENCHMARK_DB_URL"], future=True)
+        url = os.environ.get("BENCHMARK_DB_URL") or ""
+        if not url or "readonly_user:password" in url:
+            url = os.environ["DATABASE_URL"]
+        engine = create_async_engine(url, future=True)
         factory = async_sessionmaker(engine, expire_on_commit=False)
         async with factory() as s:
             row = (await s.execute(
