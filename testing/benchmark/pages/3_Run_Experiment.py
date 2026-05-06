@@ -101,7 +101,9 @@ if st.button("Run", disabled=run_disabled):
     with st.spinner("Running cascade — first run may take several minutes (subsequent are cached)..."):
         criteria_text = [c.text for c in gf.distilled_criteria]
         result = runner.run(goal_id=goal_id, config=config, candidates=cf,
-                            labels=lf, criteria=criteria_text)
+                            labels=lf, criteria=criteria_text,
+                            dataset_id=gf.dataset_id)
         out_path = runner.save_result(result)
-    st.success(f"Saved {out_path}")
+    st.success(f"Saved {out_path}"
+               + (f" (dataset: {gf.dataset_id})" if gf.dataset_id else ""))
     st.json(result.metrics.model_dump())

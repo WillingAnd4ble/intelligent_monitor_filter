@@ -11,11 +11,36 @@ _BENCH = Path(__file__).resolve().parents[1]
 if str(_BENCH.parent) not in sys.path:
     sys.path.insert(0, str(_BENCH.parent))
 
-from benchmark.lib import distill, paths, pull
+from benchmark.lib import datasets, distill, paths, pull
 from benchmark.lib.schemas import Criterion
 
 
 st.title("1 — Pull Candidates")
+
+# --- Dataset partition selection ---
+with st.expander("Dataset partition", expanded=True):
+    existing = datasets.list_datasets()
+    options = ["(no partition — query whole papers table)"] + existing
+    pick = st.selectbox("Bind this goal to a dataset", options)
+    chosen_dataset_id = None if pick == options[0] else pick
+
+    st.caption(
+        "A dataset freezes which paper IDs all retrievers can return. "
+        "Goals tied to the same dataset are exactly comparable, even months later."
+    )
+
+    with st.form("create_dataset_form"):
+        new_id = st.text_input("New dataset_id (e.g. dataset_apr07_200)")
+        new_desc = st.text_input("Short description")
+        if st.form_submit_button("Snapshot current papers as new dataset"):
+            if not new_id or not new_desc:
+                st.error("dataset_id and description required.")
+            else:
+                try:
+                    df = datasets.create_from_current_papers(new_id, new_desc)
+                    st.success(f"Created {paths.dataset_path(df.dataset_id)} — {df.paper_count} papers.")
+                except FileExistsError as e:
+                    st.error(str(e))
 
 with st.form("goal_form"):
     goal_id = st.text_input("goal_id (slug, e.g. security_v1)")
@@ -62,12 +87,17 @@ if "draft_criteria" in st.session_state:
                     raw_goal=st.session_state.draft_raw_goal,
                     criteria=criteria_objs,
                     lexical_query=new_lex,
+                    dataset_id=chosen_dataset_id,
                 )
-                st.success(f"Frozen: {paths.goal_path(gf.goal_id)}")
+                st.success(f"Frozen: {paths.goal_path(gf.goal_id)}"
+                           + (f" (dataset: {chosen_dataset_id})" if chosen_dataset_id else ""))
 
             with st.spinner("Computing SPECTER2 embedding..."):
                 emb = asyncio.run(pull.embed_goal(st.session_state.draft_raw_goal, gf.goal_id))
                 st.success(f"Embedding: {len(emb)} dims")
+
+            allow_ids = (list(datasets.paper_ids_for(chosen_dataset_id))
+                         if chosen_dataset_id else None)
 
             for retriever in ("rrf", "bm25", "specter2"):
                 with st.spinner(f"Pulling {retriever}..."):
@@ -75,6 +105,7 @@ if "draft_criteria" in st.session_state:
                         goal_id=gf.goal_id, retriever=retriever,
                         lexical_query=new_lex, goal_embedding=emb,
                         k=st.session_state.draft_top_k,
+                        paper_ids=allow_ids,
                     ))
                     st.success(f"{retriever}: {len(cf.papers)} papers → {paths.candidates_path(gf.goal_id, retriever)}")
 

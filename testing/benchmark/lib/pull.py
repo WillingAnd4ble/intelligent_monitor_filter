@@ -8,7 +8,7 @@ import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import List, Literal
+from typing import List, Literal, Optional
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -69,20 +69,38 @@ async def embed_goal(raw_goal: str, goal_id: str) -> List[float]:
     return embeddings[0]
 
 
-async def pull_bm25(session: AsyncSession, lexical_query: str, k: int = 30) -> List[CandidatePaper]:
-    stmt = text("""
-        SELECT p.id, p.title, p.abstract, p.authors, p.pdf_url, p.source_url, p.published_at,
-               ts_rank_cd(p.search_vector, websearch_to_tsquery('english', :q)) AS lex_score,
-               EXISTS (
-                 SELECT 1 FROM user_papers up
-                 WHERE up.paper_id = p.id AND up.extracted_markdown IS NOT NULL
-               ) AS has_md
-        FROM papers p
-        WHERE p.search_vector @@ websearch_to_tsquery('english', :q)
-        ORDER BY lex_score DESC
-        LIMIT :k
-    """)
-    rows = (await session.execute(stmt, {"q": lexical_query, "k": k})).mappings().fetchall()
+async def pull_bm25(session: AsyncSession, lexical_query: str, k: int = 30,
+                    paper_ids: Optional[List[str]] = None) -> List[CandidatePaper]:
+    if paper_ids is None:
+        stmt = text("""
+            SELECT p.id, p.title, p.abstract, p.authors, p.pdf_url, p.source_url, p.published_at,
+                   ts_rank_cd(p.search_vector, websearch_to_tsquery('english', :q)) AS lex_score,
+                   EXISTS (
+                     SELECT 1 FROM user_papers up
+                     WHERE up.paper_id = p.id AND up.extracted_markdown IS NOT NULL
+                   ) AS has_md
+            FROM papers p
+            WHERE p.search_vector @@ websearch_to_tsquery('english', :q)
+            ORDER BY lex_score DESC
+            LIMIT :k
+        """)
+        params = {"q": lexical_query, "k": k}
+    else:
+        stmt = text("""
+            SELECT p.id, p.title, p.abstract, p.authors, p.pdf_url, p.source_url, p.published_at,
+                   ts_rank_cd(p.search_vector, websearch_to_tsquery('english', :q)) AS lex_score,
+                   EXISTS (
+                     SELECT 1 FROM user_papers up
+                     WHERE up.paper_id = p.id AND up.extracted_markdown IS NOT NULL
+                   ) AS has_md
+            FROM papers p
+            WHERE p.search_vector @@ websearch_to_tsquery('english', :q)
+              AND p.id = ANY(:ids)
+            ORDER BY lex_score DESC
+            LIMIT :k
+        """)
+        params = {"q": lexical_query, "k": k, "ids": list(paper_ids)}
+    rows = (await session.execute(stmt, params)).mappings().fetchall()
     return [
         CandidatePaper(
             paper_id=r["id"], title=r["title"], abstract=r["abstract"],
@@ -94,21 +112,39 @@ async def pull_bm25(session: AsyncSession, lexical_query: str, k: int = 30) -> L
     ]
 
 
-async def pull_specter2(session: AsyncSession, goal_embedding: List[float], k: int = 30) -> List[CandidatePaper]:
+async def pull_specter2(session: AsyncSession, goal_embedding: List[float], k: int = 30,
+                        paper_ids: Optional[List[str]] = None) -> List[CandidatePaper]:
     vector_str = f"[{','.join(map(str, goal_embedding))}]"
-    stmt = text("""
-        SELECT p.id, p.title, p.abstract, p.authors, p.pdf_url, p.source_url, p.published_at,
-               1 - (p.embedding <=> CAST(:emb AS vector)) AS sim,
-               EXISTS (
-                 SELECT 1 FROM user_papers up
-                 WHERE up.paper_id = p.id AND up.extracted_markdown IS NOT NULL
-               ) AS has_md
-        FROM papers p
-        WHERE p.embedding IS NOT NULL
-        ORDER BY p.embedding <=> CAST(:emb AS vector)
-        LIMIT :k
-    """)
-    rows = (await session.execute(stmt, {"emb": vector_str, "k": k})).mappings().fetchall()
+    if paper_ids is None:
+        stmt = text("""
+            SELECT p.id, p.title, p.abstract, p.authors, p.pdf_url, p.source_url, p.published_at,
+                   1 - (p.embedding <=> CAST(:emb AS vector)) AS sim,
+                   EXISTS (
+                     SELECT 1 FROM user_papers up
+                     WHERE up.paper_id = p.id AND up.extracted_markdown IS NOT NULL
+                   ) AS has_md
+            FROM papers p
+            WHERE p.embedding IS NOT NULL
+            ORDER BY p.embedding <=> CAST(:emb AS vector)
+            LIMIT :k
+        """)
+        params = {"emb": vector_str, "k": k}
+    else:
+        stmt = text("""
+            SELECT p.id, p.title, p.abstract, p.authors, p.pdf_url, p.source_url, p.published_at,
+                   1 - (p.embedding <=> CAST(:emb AS vector)) AS sim,
+                   EXISTS (
+                     SELECT 1 FROM user_papers up
+                     WHERE up.paper_id = p.id AND up.extracted_markdown IS NOT NULL
+                   ) AS has_md
+            FROM papers p
+            WHERE p.embedding IS NOT NULL
+              AND p.id = ANY(:ids)
+            ORDER BY p.embedding <=> CAST(:emb AS vector)
+            LIMIT :k
+        """)
+        params = {"emb": vector_str, "k": k, "ids": list(paper_ids)}
+    rows = (await session.execute(stmt, params)).mappings().fetchall()
     return [
         CandidatePaper(
             paper_id=r["id"], title=r["title"], abstract=r["abstract"],
@@ -121,15 +157,22 @@ async def pull_specter2(session: AsyncSession, goal_embedding: List[float], k: i
 
 
 async def pull_rrf(session: AsyncSession, lexical_query: str, goal_embedding: List[float],
-                   k: int = 30, k_semantic: int = 30, k_lexical: int = 60) -> List[CandidatePaper]:
+                   k: int = 30, k_semantic: int = 30, k_lexical: int = 60,
+                   paper_ids: Optional[List[str]] = None) -> List[CandidatePaper]:
+    # If a dataset filter is in effect, ask RRF for a wider window and filter
+    # locally — backend perform_hybrid_rrf_search has no id-restriction param.
+    rrf_limit = max(k, len(paper_ids)) if paper_ids else k
     rows = await perform_hybrid_rrf_search(
         session=session,
         query_text=lexical_query,
         query_embedding=goal_embedding,
-        limit=k,
+        limit=rrf_limit,
         rrf_k_semantic=k_semantic,
         rrf_k_lexical=k_lexical,
     )
+    if paper_ids is not None:
+        allow = set(paper_ids)
+        rows = [r for r in rows if r["id"] in allow][:k]
     if not rows:
         return []
     ids = [r["id"] for r in rows]
@@ -155,18 +198,19 @@ async def pull_rrf(session: AsyncSession, lexical_query: str, goal_embedding: Li
 
 async def pull_and_save(goal_id: str, retriever: Literal["bm25", "specter2", "rrf"],
                         lexical_query: str, goal_embedding: List[float],
-                        k: int = 30) -> CandidatesFile:
+                        k: int = 30,
+                        paper_ids: Optional[List[str]] = None) -> CandidatesFile:
     engine = _engine()
     factory = _session_factory(engine)
     async with factory() as session:
         if retriever == "bm25":
-            papers = await pull_bm25(session, lexical_query, k=k)
+            papers = await pull_bm25(session, lexical_query, k=k, paper_ids=paper_ids)
             rrf_params = None
         elif retriever == "specter2":
-            papers = await pull_specter2(session, goal_embedding, k=k)
+            papers = await pull_specter2(session, goal_embedding, k=k, paper_ids=paper_ids)
             rrf_params = None
         else:
-            papers = await pull_rrf(session, lexical_query, goal_embedding, k=k)
+            papers = await pull_rrf(session, lexical_query, goal_embedding, k=k, paper_ids=paper_ids)
             rrf_params = {"k_semantic": 30, "k_lexical": 60}
 
     cf = CandidatesFile(

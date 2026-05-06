@@ -33,7 +33,8 @@ def distill(raw_goal: str, categories: List[str] | None = None,
 
 
 def freeze(goal_id: str, raw_goal: str, criteria: List[Criterion],
-           lexical_query: str, distiller_model: str = "gpt-4o-mini") -> GoalFile:
+           lexical_query: str, distiller_model: str = "gpt-4o-mini",
+           dataset_id: str | None = None) -> GoalFile:
     """Write goals/{goal_id}.json. Refuses to overwrite — frozen is frozen."""
     path = paths.goal_path(goal_id)
     if path.exists():
@@ -52,6 +53,7 @@ def freeze(goal_id: str, raw_goal: str, criteria: List[Criterion],
         scoring_rule=ScoringRule(type="majority", threshold=threshold),
         frozen_at=datetime.now(timezone.utc),
         distiller_model=distiller_model,
+        dataset_id=dataset_id,
     )
     paths.ensure_subdirs()
     path.write_text(g.model_dump_json(indent=2), encoding="utf-8")

@@ -38,8 +38,18 @@ def cache_manifest_path() -> Path:
     return data_root() / "cache_manifest.json"
 
 
+def dataset_path(dataset_id: str) -> Path:
+    return data_root() / "datasets" / f"{dataset_id}.json"
+
+
+def markdown_path(paper_id: str) -> Path:
+    safe = paper_id.replace("/", "_").replace(":", "_")
+    return data_root() / "markdown" / f"{safe}.md"
+
+
 def ensure_subdirs() -> None:
     """Create data/* subdirs if missing. Safe to call repeatedly."""
     root = data_root()
-    for sub in ("goals", "candidates", "labels", "results", "llm_cache"):
+    for sub in ("goals", "candidates", "labels", "results", "llm_cache",
+                "datasets", "markdown"):
         (root / sub).mkdir(parents=True, exist_ok=True)
