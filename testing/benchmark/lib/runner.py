@@ -194,7 +194,16 @@ def _fetch_markdown(paper_id: str) -> Optional[str]:
             )).first()
             return row[0] if row else None
 
-    return asyncio.get_event_loop().run_until_complete(_go()) if not asyncio.get_event_loop().is_running() else asyncio.run(_go())
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        # No running loop in this thread — safe to spin up a fresh one.
+        return asyncio.run(_go())
+    # A loop is already running; run the coroutine in a worker thread so
+    # we don't try to nest event loops.
+    import concurrent.futures
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+        return pool.submit(asyncio.run, _go()).result()
 
 
 def run(goal_id: str, config: RunConfig, candidates: CandidatesFile,
