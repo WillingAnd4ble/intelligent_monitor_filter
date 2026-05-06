@@ -1,29 +1,23 @@
 """Benchmark harness — Streamlit entrypoint.
 
-Run: streamlit run testing/benchmark/app.py
+Run: streamlit run testing/benchmark/Home.py
 """
 
 import os
+import sys
 from pathlib import Path
 
 import streamlit as st
 
-# Make benchmark/lib and ../backend importable
+# Make benchmark/lib importable
 _HERE = Path(__file__).resolve().parent
-import sys
 if str(_HERE.parent) not in sys.path:
     sys.path.insert(0, str(_HERE.parent))
 
-# Load .env.benchmark if present
-_env = _HERE.parent / ".env.benchmark"
-if _env.exists():
-    for line in _env.read_text(encoding="utf-8").splitlines():
-        if line.strip() and not line.startswith("#") and "=" in line:
-            k, v = line.split("=", 1)
-            os.environ.setdefault(k.strip(), v.strip())
 
-
-from benchmark.lib import paths
+# Importing the lib package side-effects env file loading
+# (backend/.env then testing/.env.benchmark) so backend modules can instantiate.
+from benchmark.lib import paths  # noqa: E402
 
 
 st.set_page_config(page_title="arXiv Benchmark Harness", layout="wide")
