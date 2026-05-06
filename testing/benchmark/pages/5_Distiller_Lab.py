@@ -38,18 +38,16 @@ with st.form("distiller_inputs"):
     interests_str = st.text_input("Content interests (comma-separated)", value="")
 
     model_choices = [
+        # Direct providers
         "gpt-4o-mini",
         "claude-haiku-4-5-20251001",
         "gpt-5.4-nano-2026-03-17",
-        # OpenRouter shortcuts — any model id with '/' is auto-routed.
-        "anthropic/claude-3.5-sonnet",
-        "anthropic/claude-3.5-haiku",
-        "openai/gpt-4o",
-        "google/gemini-flash-1.5",
-        "meta-llama/llama-3.3-70b-instruct",
-        "deepseek/deepseek-chat",
-        "qwen/qwen-2.5-72b-instruct",
-        "mistralai/mistral-large",
+        # OpenRouter — any id with '/' is auto-routed via OPENROUTER_API_KEY.
+        "google/gemini-2.5-flash",
+        "google/gemini-3-flash-preview",
+        "google/gemini-3.1-flash-lite-preview",
+        "deepseek/deepseek-v4-flash",
+        "qwen/qwen3.6-flash",
     ]
     selected_models = st.multiselect("Models", model_choices,
                                      default=["gpt-4o-mini",
