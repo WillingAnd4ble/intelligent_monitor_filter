@@ -35,7 +35,9 @@ SEEDED_MEMORY = (
 # -------- helpers --------
 
 def build_run_id(goal_id: str, config: RunConfig) -> str:
-    ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%MZ")
+    # NOTE: avoid ':' in the timestamp — Windows treats it as an Alternate Data
+    # Stream separator and writes to an invisible stream instead of a real file.
+    ts = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%MZ")
     return f"{goal_id}__{config.config_hash()}__{ts}"
 
 
