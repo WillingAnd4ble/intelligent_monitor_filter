@@ -30,6 +30,18 @@ class GoalFile(BaseModel):
     scoring_rule: ScoringRule
     frozen_at: datetime
     distiller_model: str
+    dataset_id: Optional[str] = None  # which dataset partition this goal queries
+
+
+# --- Dataset partition ---
+
+class DatasetFile(BaseModel):
+    dataset_id: str
+    description: str
+    created_at: datetime
+    paper_ids: List[str]
+    paper_count: int
+    source_query: Optional[str] = None
 
 
 # --- Candidates ---
@@ -135,6 +147,7 @@ class RunMetrics(BaseModel):
 class ResultsFile(BaseModel):
     run_id: str
     goal_id: str
+    dataset_id: Optional[str] = None  # copied from goal for thesis citation trail
     config: RunConfig
     per_paper: List[PerPaperRecord]
     metrics: RunMetrics

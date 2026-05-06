@@ -122,4 +122,5 @@ htmlcov/
 testing/data/llm_cache/
 testing/data/labels/
 testing/data/results/
+testing/data/markdown/
 testing/.env.benchmark

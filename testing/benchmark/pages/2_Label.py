@@ -11,7 +11,7 @@ _BENCH = Path(__file__).resolve().parents[1]
 if str(_BENCH.parent) not in sys.path:
     sys.path.insert(0, str(_BENCH.parent))
 
-from benchmark.lib import paths
+from benchmark.lib import markdown_warm, paths
 from benchmark.lib.schemas import GoalFile, CandidatesFile, LabelsFile, PaperLabel
 
 
@@ -55,6 +55,41 @@ st.success(
     f"Labels auto-save to `{paths.labels_path(goal_id)}` after every Save & Next. "
     "Close the tab anytime — your progress is preserved."
 )
+
+with st.expander("Pre-warm full-text (Marker) for labeled papers"):
+    st.caption(
+        "For each paper you've already labeled, fetch the full PDF text via "
+        "Modal Marker once and store it locally at "
+        f"`{paths.markdown_path('<paper_id>').parent}`. The runner uses this "
+        "cache so Deep Reader actually reads full text instead of falling back "
+        "to abstracts. Costs Modal GPU time. Skips papers already cached."
+    )
+    if st.button("Run pre-warm now"):
+        if not lf.labels:
+            st.warning("No labeled papers yet — label a few first.")
+        else:
+            bar = st.progress(0.0)
+            status = st.empty()
+            log: list[str] = []
+            log_box = st.container()
+
+            def _on_progress(pid: str, cur: int, total: int, state: str) -> None:
+                bar.progress(cur / total)
+                status.write(f"{cur}/{total} — {pid}: {state}")
+                log.append(f"{pid}: {state}")
+
+            try:
+                counts = markdown_warm.prewarm_for_goal(goal_id, progress=_on_progress)
+                bar.progress(1.0)
+                st.success(
+                    f"Done. warmed={counts['warmed']} "
+                    f"already_cached={counts['already_cached']} "
+                    f"failed={counts['failed']} missing_pdf={counts['missing_pdf']}"
+                )
+                with log_box:
+                    st.code("\n".join(log[-40:]) or "no entries")
+            except Exception as e:
+                st.error(f"Pre-warm error: {e}")
 
 st.session_state.setdefault(f"session_start_{goal_id}", time.time())
 elapsed = int(time.time() - st.session_state[f"session_start_{goal_id}"])

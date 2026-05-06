@@ -174,10 +174,21 @@ def _gt_for(paper_id: str, labels: LabelsFile) -> Optional[int]:
 
 
 def _fetch_markdown(paper_id: str) -> Optional[str]:
-    """Read UserPaper.extracted_markdown from prod DB. Returns None if missing.
+    """Resolve full-text markdown for a paper.
 
-    Never re-runs Marker. We just take what's already cached.
+    Lookup order:
+      1. Local pre-warmed cache at testing/data/markdown/{paper_id}.md
+      2. UserPaper.extracted_markdown from prod DB (set by prod pipeline runs)
+      3. None — caller falls back to abstract.
+
+    Never re-runs Marker; pre-warming is a separate explicit step.
     """
+    # 1. Local cache — populated by markdown_warm.prewarm_for_goal.
+    from benchmark.lib import markdown_warm
+    local = markdown_warm.read_local_markdown(paper_id)
+    if local:
+        return local
+
     import asyncio
     from sqlalchemy import text as sql_text
     from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
@@ -209,7 +220,8 @@ def _fetch_markdown(paper_id: str) -> Optional[str]:
 
 
 def run(goal_id: str, config: RunConfig, candidates: CandidatesFile,
-        labels: LabelsFile, criteria: List[str]) -> ResultsFile:
+        labels: LabelsFile, criteria: List[str],
+        dataset_id: Optional[str] = None) -> ResultsFile:
     """Execute the cascade for every labeled paper. Returns ResultsFile (not yet written)."""
     memory = SEEDED_MEMORY if config.feedback_memory == "seeded" else ""
     config_signature = config.config_hash()
@@ -252,8 +264,8 @@ def run(goal_id: str, config: RunConfig, candidates: CandidatesFile,
     # Aggregate metrics
     metrics_block = _compute_metrics(per_paper, config.model, missing_fulltext)
     run_id = build_run_id(goal_id, config)
-    return ResultsFile(run_id=run_id, goal_id=goal_id, config=config,
-                       per_paper=per_paper, metrics=metrics_block)
+    return ResultsFile(run_id=run_id, goal_id=goal_id, dataset_id=dataset_id,
+                       config=config, per_paper=per_paper, metrics=metrics_block)
 
 
 def _compute_metrics(per_paper: List[PerPaperRecord], model: str, missing_fulltext: int) -> RunMetrics:
