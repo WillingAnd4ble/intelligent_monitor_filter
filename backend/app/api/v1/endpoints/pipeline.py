@@ -1,6 +1,9 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
-from app.worker.celery_app import trigger_agent_discovery, trigger_goal_distiller, celery_app
+from datetime import datetime, timezone, timedelta
+from app.worker.celery_app import (
+    run_full_pipeline, trigger_goal_distiller, celery_app,
+)
 from app.api.deps import get_current_user
 from app.db.database import AsyncSessionLocal
 from app.db.models import User, UserSettings
@@ -8,28 +11,42 @@ from app.schemas.api_schemas import PipelineStatusResponse
 
 router = APIRouter()
 
+
 @router.post("/trigger", status_code=status.HTTP_202_ACCEPTED)
-async def trigger_pipeline(user: User = Depends(get_current_user)):
-    """
-    Hit by Vercel cron or manual UI button.
-    Runs GoalDistiller first if distilled_criteria is missing, then kicks off Discovery.
-    """
+async def trigger_pipeline(
+    user: User = Depends(get_current_user),
+    date: str | None = Query(
+        None,
+        description="Optional YYYY-MM-DD — fetch papers from that UTC day instead of the default window.",
+        regex=r"^\d{4}-\d{2}-\d{2}$",
+    ),
+):
+    """Run the full pipeline now. Chain GoalDistiller first if criteria are missing."""
     async with AsyncSessionLocal() as session:
         result = await session.execute(
             select(UserSettings).where(UserSettings.user_id == user.id)
         )
         user_settings = result.scalars().first()
 
-    # Chain distiller → discovery on the Celery worker if criteria are missing
+    # Build the optional window from ?date=
+    since_iso = until_iso = None
+    if date is not None:
+        try:
+            day = datetime.strptime(date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+        except ValueError:
+            raise HTTPException(status_code=422, detail="date must be YYYY-MM-DD")
+        since_iso = day.isoformat()
+        until_iso = (day + timedelta(days=1) - timedelta(seconds=1)).isoformat()
+
     if user_settings and user_settings.filtering_goal and not user_settings.distilled_criteria:
         from celery import chain
         task = chain(
             trigger_goal_distiller.si(str(user.id)),
-            trigger_agent_discovery.si(str(user.id))
+            run_full_pipeline.si(str(user.id), since_iso, until_iso),
         ).apply_async()
         return {"task_id": task.id}
 
-    task = trigger_agent_discovery.delay(str(user.id))
+    task = run_full_pipeline.delay(str(user.id), since_iso, until_iso)
     return {"task_id": task.id}
 
 @router.get("/{task_id}/status", response_model=PipelineStatusResponse)
