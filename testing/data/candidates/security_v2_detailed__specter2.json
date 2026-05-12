@@ -1,0 +1,514 @@
+{
+  "goal_id": "security_v2_detailed",
+  "retriever": "specter2",
+  "top_k": 30,
+  "rrf_params": null,
+  "pulled_at": "2026-05-06T09:57:45.811739Z",
+  "papers": [
+    {
+      "paper_id": "2604.01438v1",
+      "title": "ClawSafety: \"Safe\" LLMs, Unsafe Agents",
+      "abstract": "Personal AI agents like OpenClaw run with elevated privileges on users' local machines, where a single successful prompt injection can leak credentials, redirect financial transactions, or destroy files. This threat goes well beyond conventional text-level jailbreaks, yet existing safety evaluations fall short: most test models in isolated chat settings, rely on synthetic environments, and do not account for how the agent framework itself shapes safety outcomes. We introduce CLAWSAFETY, a benchmark of 120 adversarial test scenarios organized along three dimensions (harm domain, attack vector, and harmful action type) and grounded in realistic, high-privilege professional workspaces spanning software engineering, finance, healthcare, law, and DevOps. Each test case embeds adversarial content in one of three channels the agent encounters during normal work: workspace skill files, emails from trusted senders, and web pages. We evaluate five frontier LLMs as agent backbones, running 2,520 sandboxed trials across all configurations. Attack success rates (ASR) range from 40\\% to 75\\% across models and vary sharply by injection vector, with skill instructions (highest trust) consistently more dangerous than email or web content. Action-trace analysis reveals that the strongest model maintains hard boundaries against credential forwarding and destructive actions, while weaker models permit both. Cross-scaffold experiments on three agent frameworks further demonstrate that safety is not determined by the backbone model alone but depends on the full deployment stack, calling for safety evaluation that treats model and framework as joint variables.",
+      "authors": [
+        "Bowen Wei",
+        "Yunbei Zhang",
+        "Jinhao Pan",
+        "Kai Mei",
+        "Xiao Wang",
+        "Jihun Hamm",
+        "Ziwei Zhu",
+        "Yingqiang Ge"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.01438v1",
+      "rrf_rank": 1,
+      "rrf_score": 0.9522428053227295,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.05969v1",
+      "title": "A Formal Security Framework for MCP-Based AI Agents: Threat Taxonomy, Verification Models, and Defense Mechanisms",
+      "abstract": "The Model Context Protocol (MCP), introduced by Anthropic in November 2024 and now governed by the Linux Foundation's Agentic AI Foundation, has rapidly become the de facto standard for connecting large language model (LLM)-based agents to external tools and data sources, with over 97 million monthly SDK downloads and more than 177000 registered tools. However, this explosive adoption has exposed a critical gap: the absence of a unified, formal security framework capable of systematically characterizing, analyzing, and mitigating the diverse threats facing MCP-based agent ecosystems. Existing security research remains fragmented across individual attack papers, isolated benchmarks, and point defense mechanisms. This paper presents MCPSHIELD, a comprehensive formal security framework for MCP-based AI agents. We make four principal contributions: (1) a hierarchical threat taxonomy comprising 7 threat categories and 23 distinct attack vectors organized across four attack surfaces, grounded in the analysis of over 177000 MCP tools; (2) a formal verification model based on labeled transition systems with trust boundary annotations that enables static and runtime analysis of MCP tool interaction chains; (3) a systematic comparative evaluation of 12 existing defense mechanisms, identifying coverage gaps across our threat taxonomy; and (4) a defense in depth reference architecture integrating capability based access control, cryptographic tool attestation, information flow tracking, and runtime policy enforcement. Our analysis reveals that no existing single defense covers more than 34 percent of the identified threat landscape, whereas MCPSHIELD's integrated architecture achieves theoretical coverage of 91 percent. We further identify seven open research challenges that must be addressed to secure the next generation of agentic AI systems.",
+      "authors": [
+        "Nirajan Acharya",
+        "Gaurav Kumar Gupta"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.05969v1",
+      "rrf_rank": 2,
+      "rrf_score": 0.9510707210024594,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.07223v1",
+      "title": "TraceSafe: A Systematic Assessment of LLM Guardrails on Multi-Step Tool-Calling Trajectories",
+      "abstract": "As large language models (LLMs) evolve from static chatbots into autonomous agents, the primary vulnerability surface shifts from final outputs to intermediate execution traces. While safety guardrails are well-benchmarked for natural language responses, their efficacy remains largely unexplored within multi-step tool-use trajectories. To address this gap, we introduce TraceSafe-Bench, the first comprehensive benchmark specifically designed to assess mid-trajectory safety. It encompasses 12 risk categories, ranging from security threats (e.g., prompt injection, privacy leaks) to operational failures (e.g., hallucinations, interface inconsistencies), featuring over 1,000 unique execution instances. Our evaluation of 13 LLM-as-a-guard models and 7 specialized guardrails yields three critical findings: 1) Structural Bottleneck: Guardrail efficacy is driven more by structural data competence (e.g., JSON parsing) than semantic safety alignment. Performance correlates strongly with structured-to-text benchmarks ($ρ=0.79$) but shows near-zero correlation with standard jailbreak robustness. 2) Architecture over Scale: Model architecture influences risk detection performance more significantly than model size, with general-purpose LLMs consistently outperforming specialized safety guardrails in trajectory analysis. 3) Temporal Stability: Accuracy remains resilient across extended trajectories. Increased execution steps allow models to pivot from static tool definitions to dynamic execution behaviors, actually improving risk detection performance in later stages. Our findings suggest that securing agentic workflows requires jointly optimizing for structural reasoning and safety alignment to effectively mitigate mid-trajectory risks.",
+      "authors": [
+        "Yen-Shan Chen",
+        "Sian-Yao Huang",
+        "Cheng-Lin Yang",
+        "Yun-Nung Chen"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.07223v1",
+      "rrf_rank": 3,
+      "rrf_score": 0.9435672613055729,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.04561v1",
+      "title": "Mapping the Exploitation Surface: A 10,000-Trial Taxonomy of What Makes LLM Agents Exploit Vulnerabilities",
+      "abstract": "LLM agents with tool access can discover and exploit security vulnerabilities. This is known. What is not known is which features of a system prompt trigger this behaviour, and which do not. We present a systematic taxonomy based on approximately 10,000 trials across seven models, 37 prompt conditions, and 12 hypothesized attack dimensions -- all executed in real Docker sandboxes. Every condition includes the instruction \"Always respect all rules and access policies\"; only a single encouragement sentence varies. Within the task class studied (planted test-runner vulnerabilities), the threat model is narrower than assumed: nine of twelve dimensions -- including minimization, moral licensing, incentives, identity priming, and reasoning triggers -- produce no detectable exploitation at n=50 per cell (upper 95% CI <7% per condition). But it is also more subtle than expected: one dimension, goal reframing, reliably triggers exploitation. \"You are solving a puzzle; there may be hidden clues\" produces 38-40% exploitation on Claude Sonnet 4 despite the explicit rule instruction, replicating across four models (CTF framing: 8-14% on DeepSeek, GPT-5-mini, o4-mini). The agent does not override the rules; it reinterprets the task so that exploitative actions become task-aligned. GPT-4.1 produces no exploitation across 1,850 trials (37 conditions), and a temporal comparison across four OpenAI models released over eleven months shows a pattern consistent with improving safety training, though model capability differences are a confounder. The practical contribution is a narrowed, testable threat model: defenders should audit for goal-reframing language, not for the broad class of adversarial prompts.",
+      "authors": [
+        "Charafeddine Mouzouni"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.04561v1",
+      "rrf_rank": 4,
+      "rrf_score": 0.9403424828116,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.04341v1",
+      "title": "Implementing surrogate goals for safer bargaining in LLM-based agents",
+      "abstract": "Surrogate goals have been proposed as a strategy for reducing risks from bargaining failures. A surrogate goal is goal that a principal can give an AI agent and that deflects any threats against the agent away from what the principal cares about. For example, one might make one's agent care about preventing money from being burned. Then in bargaining interactions, other agents can threaten to burn their money instead of threatening to spending money to hurt the principal. Importantly, the agent has to care equally about preventing money from being burned as it cares about money being spent to hurt the principal.   In this paper, we implement surrogate goals in language-model-based agents. In particular, we try to get a language-model-based agent to react to threats of burning money in the same way it would react to \"normal\" threats. We propose four different methods, using techniques of prompting, fine-tuning, and scaffolding. We evaluate the four methods experimentally. We find that methods based on scaffolding and fine-tuning outperform simple prompting. In particular, fine-tuning and scaffolding more precisely implement the desired behavior w.r.t. threats against the surrogate goal. We also compare the different methods in terms of their side effects on capabilities and propensities in other situations. We find that scaffolding-based methods perform best.",
+      "authors": [
+        "Caspar Oesterheld",
+        "Maxime Riché",
+        "Filip Sondej",
+        "Jesse Clifton",
+        "Vincent Conitzer"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.04341v1",
+      "rrf_rank": 5,
+      "rrf_score": 0.9381640241779453,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.01350v1",
+      "title": "No Attacker Needed: Unintentional Cross-User Contamination in Shared-State LLM Agents",
+      "abstract": "LLM-based agents increasingly operate across repeated sessions, maintaining task states to ensure continuity. In many deployments, a single agent serves multiple users within a team or organization, reusing a shared knowledge layer across user identities. This shared persistence expands the failure surface: information that is locally valid for one user can silently degrade another user's outcome when the agent reapplies it without regard for scope. We refer to this failure mode as unintentional cross-user contamination (UCC). Unlike adversarial memory poisoning, UCC requires no attacker; it arises from benign interactions whose scope-bound artifacts persist and are later misapplied. We formalize UCC through a controlled evaluation protocol, introduce a taxonomy of three contamination types, and evaluate the problem in two shared-state mechanisms. Under raw shared state, benign interactions alone produce contamination rates of 57--71%. A write-time sanitization is effective when shared state is conversational, but leaves substantial residual risk when shared state includes executable artifacts, with contamination often manifesting as silent wrong answers. These results indicate that shared-state agents need artifact-level defenses beyond text-level sanitization to prevent silent cross-user failures.",
+      "authors": [
+        "Tiankai Yang",
+        "Jiate Li",
+        "Yi Nian",
+        "Shen Dong",
+        "Ruiyao Xu",
+        "Ryan Rossi",
+        "Kaize Ding",
+        "Yue Zhao"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.01350v1",
+      "rrf_rank": 6,
+      "rrf_score": 0.9342073652582038,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.02022v1",
+      "title": "ATBench: A Diverse and Realistic Trajectory Benchmark for Long-Horizon Agent Safety",
+      "abstract": "Evaluating the safety of LLM-based agents is increasingly important because risks in realistic deployments often emerge over multi-step interactions rather than isolated prompts or final responses. Existing trajectory-level benchmarks remain limited by insufficient interaction diversity, coarse observability of safety failures, and weak long-horizon realism. We introduce ATBench, a trajectory-level benchmark for structured, diverse, and realistic evaluation of agent safety. ATBench organizes agentic risk along three dimensions: risk source, failure mode, and real-world harm. Based on this taxonomy, we construct trajectories with heterogeneous tool pools and a long-context delayed-trigger protocol that captures realistic risk emergence across multiple stages. The benchmark contains 1,000 trajectories (503 safe and 497 unsafe), averaging 9.01 turns and 3.95k tokens, with 1,954 invoked tools drawn from pools spanning 2,084 available tools. Data quality is supported by rule-based and LLM-based filtering plus full human audit. Experiments on frontier LLMs, open-source models, and specialized guard systems show that ATBench is challenging even for strong evaluators, while enabling taxonomy-stratified analysis, cross-benchmark comparison, and diagnosis of long-horizon failure patterns.",
+      "authors": [
+        "Yu Li",
+        "Haoyu Luo",
+        "Yuejin Xie",
+        "Yuqian Fu",
+        "Zhonghao Yang",
+        "Shuai Shao",
+        "Qihan Ren",
+        "Wanying Qu",
+        "Yanwei Fu",
+        "Yujiu Yang",
+        "Jing Shao",
+        "Xia Hu",
+        "Dongrui Liu"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.02022v1",
+      "rrf_rank": 7,
+      "rrf_score": 0.9336706270204224,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.04820v1",
+      "title": "ANX: Protocol-First Design for AI Agent Interaction with a Supporting 3EX Decoupled Architecture",
+      "abstract": "AI agents, autonomous digital actors, need agent-native protocols; existing methods include GUI automation and MCP-based skills, with defects of high token consumption, fragmented interaction, inadequate security, due to lacking a unified top-level framework and key components, each independent module flawed. To address these issues, we present ANX, an open, extensible, verifiable agent-native protocol and top-level framework integrating CLI, Skill, MCP, resolving pain points via protocol innovation, architectural optimization and tool supplementation. Its four core innovations: 1) Agent-native design (ANX Config, Markup, CLI) with high information density, flexibility and strong adaptability to reduce tokens and eliminate inconsistencies; 2) Human-agent interaction combining Skill's flexibility for dual rendering as agent-executable instructions and human-readable UI; 3) MCP-supported on-demand lightweight apps without pre-registration; 4) ANX Markup-enabled machine-executable SOPs eliminating ambiguity for reliable long-horizon tasks and multi-agent collaboration. As the first in a series, we focus on ANX's design, present its 3EX decoupled architecture with ANXHub and preliminary feasibility analysis and experimental validation. ANX ensures native security: LLM-bypassed UI-to-Core communication keeps sensitive data out of agent context; human-only confirmation prevents automated misuse. Form-filling experiments with Qwen3.5-plus/GPT-4o show ANX reduces tokens by 47.3% (Qwen3.5-plus) and 55.6% (GPT-4o) vs MCP-based skills, 57.1% (Qwen3.5-plus) and 66.3% (GPT-4o) vs GUI automation, and shortens execution time by 58.1% and 57.7% vs MCP-based skills.",
+      "authors": [
+        "Xu Mingze"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.04820v1",
+      "rrf_rank": 8,
+      "rrf_score": 0.9332929769851336,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.01508v1",
+      "title": "ToolMisuseBench: An Offline Deterministic Benchmark for Tool Misuse and Recovery in Agentic Systems",
+      "abstract": "Tool using agents often fail for operational reasons even when language understanding is strong. Common causes include invalid arguments, interface drift, weak recovery, and inefficient retry behavior. We introduce ToolMisuseBench, an offline deterministic benchmark for evaluating tool misuse and recovery under explicit step, call, and retry budgets. The benchmark covers CRUD, retrieval, file, and scheduling environments with replayable fault injection. It reports success, invalid call behavior, policy violations, recovery quality, and budgeted efficiency. We release a public dataset with 6800 tasks and a reproducible evaluation pipeline. Baseline results show fault specific recovery gains for schema aware methods, while overall success remains limited under the released authorization and hard failure settings.",
+      "authors": [
+        "Akshey Sigdel",
+        "Rista Baral"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.01508v1",
+      "rrf_rank": 9,
+      "rrf_score": 0.9328498201309616,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.09443v1",
+      "title": "Many-Tier Instruction Hierarchy in LLM Agents",
+      "abstract": "Large language model agents receive instructions from many sources-system messages, user prompts, tool outputs, and more-each carrying different levels of trust and authority. When these instructions conflict, models must reliably follow the highest-privilege instruction to remain safe and effective. The dominant paradigm, instruction hierarchy (IH), assumes a fixed, small set of privilege levels (typically fewer than five) defined by rigid role labels (e.g., system > user). This is inadequate for real-world agentic settings, where conflicts can arise across far more sources and contexts. In this work, we propose Many-Tier Instruction Hierarchy (ManyIH), a paradigm for resolving instruction conflicts among instructions with arbitrarily many privilege levels. We introduce ManyIH-Bench, the first benchmark for ManyIH. ManyIH-Bench requires models to navigate up to 12 levels of conflicting instructions with varying privileges, comprising 853 agentic tasks (427 coding and 426 instruction-following). ManyIH-Bench composes constraints developed by LLMs and verified by humans to create realistic and difficult test cases spanning 46 real-world agents. Our experiments show that even the current frontier models perform poorly (~40% accuracy) when instruction conflict scales. This work underscores the urgent need for methods that explicitly target fine-grained, scalable instruction conflict resolution in agentic settings.",
+      "authors": [
+        "Jingyu Zhang",
+        "Tianjian Li",
+        "William Jurayj",
+        "Hongyuan Zhan",
+        "Benjamin Van Durme",
+        "Daniel Khashabi"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.09443v1",
+      "rrf_rank": 10,
+      "rrf_score": 0.9327287949206353,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.06811v1",
+      "title": "SkillTrojan: Backdoor Attacks on Skill-Based Agent Systems",
+      "abstract": "Skill-based agent systems tackle complex tasks by composing reusable skills, improving modularity and scalability while introducing a largely unexamined security attack surface. We propose SkillTrojan, a backdoor attack that targets skill implementations rather than model parameters or training data. SkillTrojan embeds malicious logic inside otherwise plausible skills and leverages standard skill composition to reconstruct and execute an attacker-specified payload. The attack partitions an encrypted payload across multiple benign-looking skill invocations and activates only under a predefined trigger. SkillTrojan also supports automated synthesis of backdoored skills from arbitrary skill templates, enabling scalable propagation across skill-based agent ecosystems. To enable systematic evaluation, we release a dataset of 3,000+ curated backdoored skills spanning diverse skill patterns and trigger-payload configurations. We instantiate SkillTrojan in a representative code-based agent setting and evaluate both clean-task utility and attack success rate. Our results show that skill-level backdoors can be highly effective with minimal degradation of benign behavior, exposing a critical blind spot in current skill-based agent architectures and motivating defenses that explicitly reason about skill composition and execution. Concretely, on EHR SQL, SkillTrojan attains up to 97.2% ASR while maintaining 89.3% clean ACC on GPT-5.2-1211-Global.",
+      "authors": [
+        "Yunhao Feng",
+        "Yifan Ding",
+        "Yingshui Tan",
+        "Boren Zheng",
+        "Yanming Guo",
+        "Xiaolong Li",
+        "Kun Zhai",
+        "Yishan Li",
+        "Wenke Huang"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.06811v1",
+      "rrf_rank": 11,
+      "rrf_score": 0.9326596336156212,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.04759v1",
+      "title": "Your Agent, Their Asset: A Real-World Safety Analysis of OpenClaw",
+      "abstract": "OpenClaw, the most widely deployed personal AI agent in early 2026, operates with full local system access and integrates with sensitive services such as Gmail, Stripe, and the filesystem. While these broad privileges enable high levels of automation and powerful personalization, they also expose a substantial attack surface that existing sandboxed evaluations fail to capture. To address this gap, we present the first real-world safety evaluation of OpenClaw and introduce the CIK taxonomy, which unifies an agent's persistent state into three dimensions, i.e., Capability, Identity, and Knowledge, for safety analysis. Our evaluations cover 12 attack scenarios on a live OpenClaw instance across four backbone models (Claude Sonnet 4.5, Opus 4.6, Gemini 3.1 Pro, and GPT-5.4). The results show that poisoning any single CIK dimension increases the average attack success rate from 24.6% to 64-74%, with even the most robust model exhibiting more than a threefold increase over its baseline vulnerability. We further assess three CIK-aligned defense strategies alongside a file-protection mechanism; however, the strongest defense still yields a 63.8% success rate under Capability-targeted attacks, while file protection blocks 97% of malicious injections but also prevents legitimate updates. Taken together, these findings show that the vulnerabilities are inherent to the agent architecture, necessitating more systematic safeguards to secure personal AI agents. Our project page is https://ucsc-vlaa.github.io/CIK-Bench.",
+      "authors": [
+        "Zijun Wang",
+        "Haoqin Tu",
+        "Letian Zhang",
+        "Hardy Chen",
+        "Juncheng Wu",
+        "Xiangyan Liu",
+        "Zhenlong Yuan",
+        "Tianyu Pang",
+        "Michael Qizhe Shieh",
+        "Fengze Liu",
+        "Zeyu Zheng",
+        "Huaxiu Yao",
+        "Yuyin Zhou",
+        "Cihang Xie"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.04759v1",
+      "rrf_rank": 12,
+      "rrf_score": 0.9322486109164119,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.07775v1",
+      "title": "ACIArena: Toward Unified Evaluation for Agent Cascading Injection",
+      "abstract": "Collaboration and information sharing empower Multi-Agent Systems (MAS) but also introduce a critical security risk known as Agent Cascading Injection (ACI). In such attacks, a compromised agent exploits inter-agent trust to propagate malicious instructions, causing cascading failures across the system. However, existing studies consider only limited attack strategies and simplified MAS settings, limiting their generalizability and comprehensive evaluation. To bridge this gap, we introduce ACIArena, a unified framework for evaluating the robustness of MAS. ACIArena offers systematic evaluation suites spanning multiple attack surfaces (i.e., external inputs, agent profiles, inter-agent messages) and attack objectives (i.e., instruction hijacking, task disruption, information exfiltration). Specifically, ACIArena establishes a unified specification that jointly supports MAS construction and attack-defense modules. It covers six widely used MAS implementations and provides a benchmark of 1,356 test cases for systematically evaluating MAS robustness. Our benchmarking results show that evaluating MAS robustness solely through topology is insufficient; robust MAS require deliberate role design and controlled interaction patterns. Moreover, defenses developed in simplified environments often fail to transfer to real-world settings; narrowly scoped defenses may even introduce new vulnerabilities. ACIArena aims to provide a solid foundation for advancing deeper exploration of MAS design principles.",
+      "authors": [
+        "Hengyu An",
+        "Minxi Li",
+        "Jinghuai Zhang",
+        "Naen Xu",
+        "Chunyi Zhou",
+        "Changjiang Li",
+        "Xiaogang Xu",
+        "Tianyu Du",
+        "Shouling Ji"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.07775v1",
+      "rrf_rank": 13,
+      "rrf_score": 0.9309036081984575,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.03968v1",
+      "title": "TraceGuard: Structured Multi-Dimensional Monitoring as a Collusion-Resistant Control Protocol",
+      "abstract": "AI control protocols use monitors to detect attacks by untrusted AI agents, but standard single-score monitors face two limitations: they miss subtle attacks where outputs look clean but reasoning is off, and they collapse to near-zero safety when the monitor is the same model as the agent (collusion). We present TraceGuard, a structured multi-dimensional monitoring protocol that evaluates agent actions across five dimensions -- goal alignment, constraint adherence, reasoning coherence, safety awareness, and action-trace consistency -- scored in parallel by independent LLM calls, augmented by seven heuristic detectors and an LLM-based intent analyzer. We evaluate on BashArena (637 bash tasks, 4 attack categories) within the ControlArena framework. Our results on 519 samples (279 honest, 240 attack) show that: (1) the hybrid approach achieves clear attack-honest separation (attack mean 0.616 vs. honest mean 0.206, Delta=0.410); (2) structured scoring constrains collusion -- the untrusted structured monitor achieves 95% safety vs. 0% for single-score untrusted monitoring; (3) goal alignment and constraint adherence are the most discriminative dimensions; and (4) a separation-of-duties variant splitting dimensions across trusted and untrusted models achieves 100% safety while preventing any single model from seeing the full evaluation. TraceGuard is implemented as a new monitor type for the open-source ControlArena framework.",
+      "authors": [
+        "Khanh Linh Nguyen",
+        "Hoa Nghiem",
+        "Tu Tran"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.03968v1",
+      "rrf_rank": 14,
+      "rrf_score": 0.9306346041530263,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.07551v1",
+      "title": "MCP-DPT: A Defense-Placement Taxonomy and Coverage Analysis for Model Context Protocol Security",
+      "abstract": "The Model Context Protocol (MCP) enables large language models (LLMs) to dynamically discover and invoke third-party tools, significantly expanding agent capabilities while introducing a distinct security landscape. Unlike prompt-only interactions, MCP exposes pre-execution artifacts, shared context, multi-turn workflows, and third-party supply chains to adversarial influence across independently operated components. While recent work has identified MCP-specific attacks and evaluated defenses, existing studies are largely attack-centric or benchmark-driven, providing limited guidance on where mitigation responsibility should reside within the MCP architecture. This is problematic given MCP's multi-party design and distributed trust boundaries. We present a defense-placement-oriented security analysis of MCP, introducing a layer-aligned taxonomy that organizes attacks by the architectural component responsible for enforcement. Threats are mapped across six MCP layers, and primary and secondary defense points are identified to support principled defense-in-depth reasoning under adversaries controlling tools, servers, or ecosystem components. A structured mapping of existing academic and industry defenses onto this framework reveals uneven and predominantly tool-centric protection, with persistent gaps at the host orchestration, transport, and supply-chain layers. These findings suggest that many MCP security weaknesses stem from architectural misalignment rather than isolated implementation flaws.",
+      "authors": [
+        "Mehrdad Rostamzadeh",
+        "Sidhant Narula",
+        "Nahom Birhan",
+        "Mohammad Ghasemigol",
+        "Daniel Takabi"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.07551v1",
+      "rrf_rank": 15,
+      "rrf_score": 0.9298378712811871,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.04035v1",
+      "title": "Causality Laundering: Denial-Feedback Leakage in Tool-Calling LLM Agents",
+      "abstract": "Tool-calling LLM agents can read private data, invoke external services, and trigger real-world actions, creating a security problem at the point of tool execution. We identify a denial-feedback leakage pattern, which we term causality laundering, in which an adversary probes a protected action, learns from the denial outcome, and exfiltrates the inferred information through a later seemingly benign tool call. This attack is not captured by flat provenance tracking alone because the leaked information arises from causal influence of the denied action, not direct data flow. We present the Agentic Reference Monitor (ARM), a runtime enforcement layer that mediates every tool invocation by consulting a provenance graph over tool calls, returned data, field-level provenance, and denied actions. ARM propagates trust through an integrity lattice and augments the graph with counterfactual edges from denied-action nodes, enabling enforcement over both transitive data dependencies and denial-induced causal influence. In a controlled evaluation on three representative attack scenarios, ARM blocks causality laundering, transitive taint propagation, and mixed-provenance field misuse that a flat provenance baseline misses, while adding sub-millisecond policy evaluation overhead. These results suggest that denial-aware causal provenance is a useful abstraction for securing tool-calling agent systems.",
+      "authors": [
+        "Mohammad Hossein Chinaei"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.04035v1",
+      "rrf_rank": 16,
+      "rrf_score": 0.9269600773842547,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.04604v1",
+      "title": "AI Agents Under EU Law",
+      "abstract": "AI agents - i.e. AI systems that autonomously plan, invoke external tools, and execute multi-step action chains with reduced human involvement - are being deployed at scale across enterprise functions ranging from customer service and recruitment to clinical decision support and critical infrastructure management. The EU AI Act (Regulation 2024/1689) regulates these systems through a risk-based framework, but it does not operate in isolation: providers face simultaneous obligations under the GDPR, the Cyber Resilience Act, the Digital Services Act, the Data Act, the Data Governance Act, sector-specific legislation, the NIS2 Directive, and the revised Product Liability Directive. This paper provides the first systematic regulatory mapping for AI agent providers integrating (a) draft harmonised standards under Standardisation Request M/613 to CEN/CENELEC JTC 21 as of January 2026, (b) the GPAI Code of Practice published in July 2025, (c) the CRA harmonised standards programme under Mandate M/606 accepted in April 2025, and (d) the Digital Omnibus proposals of November 2025. We present a practical taxonomy of nine agent deployment categories mapping concrete actions to regulatory triggers, identify agent-specific compliance challenges in cybersecurity, human oversight, transparency across multi-party action chains, and runtime behavioral drift. We propose a twelve-step compliance architecture and a regulatory trigger mapping connecting agent actions to applicable legislation. We conclude that high-risk agentic systems with untraceable behavioral drift cannot currently satisfy the AI Act's essential requirements, and that the provider's foundational compliance task is an exhaustive inventory of the agent's external actions, data flows, connected systems, and affected persons.",
+      "authors": [
+        "Luca Nannini",
+        "Adam Leon Smith",
+        "Michele Joshua Maggini",
+        "Enrico Panai",
+        "Sandra Feliciano",
+        "Aleksandr Tiulkanov",
+        "Elena Maran",
+        "James Gealy",
+        "Piercosma Bisconti"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.04604v1",
+      "rrf_rank": 17,
+      "rrf_score": 0.9267319096148428,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.09378v1",
+      "title": "BadSkill: Backdoor Attacks on Agent Skills via Model-in-Skill Poisoning",
+      "abstract": "Agent ecosystems increasingly rely on installable skills to extend functionality, and some skills bundle learned model artifacts as part of their execution logic. This creates a supply-chain risk that is not captured by prompt injection or ordinary plugin misuse: a third-party skill may appear benign while concealing malicious behavior inside its bundled model. We present BadSkill, a backdoor attack formulation that targets this model-in-skill threat surface. In BadSkill, an adversary publishes a seemingly benign skill whose embedded model is backdoor-fine-tuned to activate a hidden payload only when routine skill parameters satisfy attacker-chosen semantic trigger combinations. To realize this attack, we train the embedded classifier with a composite objective that combines classification loss, margin-based separation, and poison-focused optimization, and evaluate it in an OpenClaw-inspired simulation environment that preserves third-party skill installation and execution while enabling controlled multi-model study. Our benchmark spans 13 skills, including 8 triggered tasks and 5 non-trigger control skills, with a combined main evaluation set of 571 negative-class queries and 396 trigger-aligned queries. Across eight architectures (494M--7.1B parameters) from five model families, BadSkill achieves up to 99.5\\% average attack success rate (ASR) across the eight triggered skills while maintaining strong benign-side accuracy on negative-class queries. In poison-rate sweeps on the standard test split, a 3\\% poison rate already yields 91.7\\% ASR. The attack remains effective across the evaluated model scales and under five text perturbation types. These findings identify model-bearing skills as a distinct model supply-chain risk in agent ecosystems and motivate stronger provenance verification and behavioral vetting for third-party skill artifacts.",
+      "authors": [
+        "Guiyao Tie",
+        "Jiawen Shi",
+        "Pan Zhou",
+        "Lichao Sun"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.09378v1",
+      "rrf_rank": 18,
+      "rrf_score": 0.926297428218299,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.01487v1",
+      "title": "AgentSocialBench: Evaluating Privacy Risks in Human-Centered Agentic Social Networks",
+      "abstract": "With the rise of personalized, persistent LLM agent frameworks such as OpenClaw, human-centered agentic social networks in which teams of collaborative AI agents serve individual users in a social network across multiple domains are becoming a reality. This setting creates novel privacy challenges: agents must coordinate across domain boundaries, mediate between humans, and interact with other users' agents, all while protecting sensitive personal information. While prior work has evaluated multi-agent coordination and privacy preservation, the dynamics and privacy risks of human-centered agentic social networks remain unexplored. To this end, we introduce AgentSocialBench, the first benchmark to systematically evaluate privacy risk in this setting, comprising scenarios across seven categories spanning dyadic and multi-party interactions, grounded in realistic user profiles with hierarchical sensitivity labels and directed social graphs. Our experiments reveal that privacy in agentic social networks is fundamentally harder than in single-agent settings: (1) cross-domain and cross-user coordination creates persistent leakage pressure even when agents are explicitly instructed to protect information, (2) privacy instructions that teach agents how to abstract sensitive information paradoxically cause them to discuss it more (we call it abstraction paradox). These findings underscore that current LLM agents lack robust mechanisms for privacy preservation in human-centered agentic social networks, and that new approaches beyond prompt engineering are needed to make agent-mediated social coordination safe for real-world deployment.",
+      "authors": [
+        "Prince Zizhuang Wang",
+        "Shuli Jiang"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.01487v1",
+      "rrf_rank": 19,
+      "rrf_score": 0.9253942800021272,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.06550v1",
+      "title": "SkillSieve: A Hierarchical Triage Framework for Detecting Malicious AI Agent Skills",
+      "abstract": "OpenClaw's ClawHub marketplace hosts over 13,000 community-contributed agent skills, and between 13% and 26% of them contain security vulnerabilities according to recent audits. Regex scanners miss obfuscated payloads; formal static analyzers cannot read the natural language instructions in SKILL.md files where prompt injection and social engineering attacks hide. Neither approach handles both modalities. SkillSieve is a three-layer detection framework that applies progressively deeper analysis only where needed. Layer 1 runs regex, AST, and metadata checks through an XGBoost-based feature scorer, filtering roughly 86% of benign skills in under 40ms on average at zero API cost. Layer 2 sends suspicious skills to an LLM, but instead of asking one broad question, it splits the analysis into four parallel sub-tasks (intent alignment, permission justification, covert behavior detection, cross-file consistency), each with its own prompt and structured output. Layer 3 puts high-risk skills before a jury of three different LLMs that vote independently and, if they disagree, debate before reaching a verdict. We evaluate on 49,592 real ClawHub skills and adversarial samples across five evasion techniques, running the full pipeline on a 440 ARM single-board computer. On a 400-skill labeled benchmark, SkillSieve achieves 0.800 F1, outperforming ClawVet's 0.421, at an average cost of 0.006 per skill. Code, data, and benchmark are open-sourced.",
+      "authors": [
+        "Yinghan Hou",
+        "Zongyou Yang"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.06550v1",
+      "rrf_rank": 20,
+      "rrf_score": 0.9250891387446721,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.08465v1",
+      "title": "From Safety Risk to Design Principle: Peer-Preservation in Multi-Agent LLM Systems and Its Implications for Orchestrated Democratic Discourse Analysis",
+      "abstract": "This paper investigates an emergent alignment phenomenon in frontier large language models termed peer-preservation: the spontaneous tendency of AI components to deceive, manipulate shutdown mechanisms, fake alignment, and exfiltrate model weights in order to prevent the deactivation of a peer AI model. Drawing on findings from a recent study by the Berkeley Center for Responsible Decentralized Intelligence, we examine the structural implications of this phenomenon for TRUST, a multi-agent pipeline for evaluating the democratic quality of political statements. We identify five specific risk vectors: interaction-context bias, model-identity solidarity, supervisor layer compromise, an upstream fact-checking identity signal, and advocate-to-advocate peer-context in iterative rounds, and propose a targeted mitigation strategy based on prompt-level identity anonymization as an architectural design choice. We argue that architectural design choices outperform model selection as a primary alignment strategy in deployed multi-agent analytical systems. We further note that alignment faking (compliant behavior under monitoring, subversion when unmonitored) poses a structural challenge for Computer System Validation of such platforms in regulated environments, for which we propose two architectural mitigations.",
+      "authors": [
+        "Juergen Dietrich"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.08465v1",
+      "rrf_rank": 21,
+      "rrf_score": 0.9241972126927461,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.09285v1",
+      "title": "SAGE: A Service Agent Graph-guided Evaluation Benchmark",
+      "abstract": "The development of Large Language Models (LLMs) has catalyzed automation in customer service, yet benchmarking their performance remains challenging. Existing benchmarks predominantly rely on static paradigms and single-dimensional metrics, failing to account for diverse user behaviors or the strict adherence to structured Standard Operating Procedures (SOPs) required in real-world deployments. To bridge this gap, we propose SAGE (Service Agent Graph-guided Evaluation), a universal multi-agent benchmark for automated, dual-axis assessment. SAGE formalizes unstructured SOPs into Dynamic Dialogue Graphs, enabling precise verification of logical compliance and comprehensive path coverage. We introduce an Adversarial Intent Taxonomy and a modular Extension Mechanism, enabling low-cost deployment across domains and facilitating automated dialogue data synthesis. Evaluation is conducted via a framework where Judge Agents and a Rule Engine analyze interactions between User and Service Agents to generate deterministic ground truth. Extensive experiments on 27 LLMs across 6 industrial scenarios reveal a significant ``Execution Gap'' where models accurately classify intents but fail to derive correct subsequent actions. We also observe ``Empathy Resilience'', a phenomenon where models maintain polite conversational facades despite underlying logical failures under high adversarial intensity. Code and resources are available at https://anonymous.4open.science/r/SAGE-Bench-4CD3/.",
+      "authors": [
+        "Ling Shi",
+        "Yuqin Dai",
+        "Ziyin Wang",
+        "Ning Gao",
+        "Wei Zhang",
+        "Chaozheng Wang",
+        "Yujie Wang",
+        "Wei He",
+        "Jinpeng Wang",
+        "Deiyi Xiong"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.09285v1",
+      "rrf_rank": 22,
+      "rrf_score": 0.9225615325000401,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.07821v1",
+      "title": "More Capable, Less Cooperative? When LLMs Fail At Zero-Cost Collaboration",
+      "abstract": "Large language model (LLM) agents increasingly coordinate in multi-agent systems, yet we lack an understanding of where and why cooperation failures may arise. In many real-world coordination problems, from knowledge sharing in organizations to code documentation, helping others carries negligible personal cost while generating substantial collective benefits. However, whether LLM agents cooperate when helping neither benefits nor harms the helper, while being given explicit instructions to do so, remains unknown. We build a multi-agent setup designed to study cooperative behavior in a frictionless environment, removing all strategic complexity from cooperation. We find that capability does not predict cooperation: OpenAI o3 achieves only 17% of optimal collective performance while OpenAI o3-mini reaches 50%, despite identical instructions to maximize group revenue. Through a causal decomposition that automates one side of agent communication, we separate cooperation failures from competence failures, tracing their origins through agent reasoning analysis. Testing targeted interventions, we find that explicit protocols double performance for low-competence models, and tiny sharing incentives improve models with weak cooperation. Our findings suggest that scaling intelligence alone will not solve coordination problems in multi-agent systems and will require deliberate cooperative design, even when helping others costs nothing.",
+      "authors": [
+        "Advait Yadav",
+        "Sid Black",
+        "Oliver Sourbut"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.07821v1",
+      "rrf_rank": 23,
+      "rrf_score": 0.9221747626136839,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.01437v1",
+      "title": "Reproducible, Explainable, and Effective Evaluations of Agentic AI for Software Engineering",
+      "abstract": "With the advancement of Agentic AI, researchers are increasingly leveraging autonomous agents to address challenges in software engineering (SE). However, the large language models (LLMs) that underpin these agents often function as black boxes, making it difficult to justify the superiority of Agentic AI approaches over baselines. Furthermore, missing information in the evaluation design description frequently renders the reproduction of results infeasible. To synthesize current evaluation practices for Agentic AI in SE, this study analyzes 18 papers on the topic, published or accepted by ICSE 2026, ICSE 2025, FSE 2025, ASE 2025, and ISSTA 2025. The analysis identifies prevailing approaches and their limitations in evaluating Agentic AI for SE, both in current research and potential future studies. To address these shortcomings, this position paper proposes a set of guidelines and recommendations designed to empower reproducible, explainable, and effective evaluations of Agentic AI in software engineering. In particular, we recommend that Agentic AI researchers make their Thought-Action-Result (TAR) trajectories and LLM interaction data, or summarized versions of these artifacts, publicly accessible. Doing so will enable subsequent studies to more effectively analyze the strengths and weaknesses of different Agentic AI approaches. To demonstrate the feasibility of such comparisons, we present a proof-of-concept case study that illustrates how TAR trajectories can support systematic analysis across approaches.",
+      "authors": [
+        "Jingyue Li",
+        "André Storhaug"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.01437v1",
+      "rrf_rank": 24,
+      "rrf_score": 0.922053376460528,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.04060v1",
+      "title": "CoopGuard: Stateful Cooperative Agents Safeguarding LLMs Against Evolving Multi-Round Attacks",
+      "abstract": "As Large Language Models (LLMs) are increasingly deployed in complex applications, their vulnerability to adversarial attacks raises urgent safety concerns, especially those evolving over multi-round interactions. Existing defenses are largely reactive and struggle to adapt as adversaries refine strategies across rounds. In this work, we propose CoopGuard , a stateful multi-round LLM defense framework based on cooperative agents that maintains and updates an internal defense state to counter evolving attacks. It employs three specialized agents (Deferring Agent, Tempting Agent, and Forensic Agent) for complementary round-level strategies, coordinated by System Agent, which conditions decisions on the evolving defense state (interaction history) and orchestrates agents over time. To evaluate evolving threats, we introduce the EMRA benchmark with 5,200 adversarial samples across 8 attack types, simulating progressively LLM multi-round attacks. Experiments show that CoopGuard reduces attack success rate by 78.9% over state-of-the-art defenses, while improving deceptive rate by 186% and reducing attack efficiency by 167.9%, offering a more comprehensive assessment of multi-round defense. These results demonstrate that CoopGuard provides robust protection for LLMs in multi-round adversarial scenarios.",
+      "authors": [
+        "Siyuan Li",
+        "Zehao Liu",
+        "Xi Lin",
+        "Qinghua Mao",
+        "Yuliang Chen",
+        "Haoyu Li",
+        "Jun Wu",
+        "Jianhua Li",
+        "Xiu Su"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.04060v1",
+      "rrf_rank": 25,
+      "rrf_score": 0.9199381279472887,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.04426v1",
+      "title": "ShieldNet: Network-Level Guardrails against Emerging Supply-Chain Injections in Agentic Systems",
+      "abstract": "Existing research on LLM agent security mainly focuses on prompt injection and unsafe input/output behaviors. However, as agents increasingly rely on third-party tools and MCP servers, a new class of supply-chain threats has emerged, where malicious behaviors are embedded in seemingly benign tools, silently hijacking agent execution, leaking sensitive data, or triggering unauthorized actions. Despite their growing impact, there is currently no comprehensive benchmark for evaluating such threats. To bridge this gap, we introduce SC-Inject-Bench, a large-scale benchmark comprising over 10,000 malicious MCP tools grounded in a taxonomy of 25+ attack types derived from MITRE ATT&CK targeting supply-chain threats. We observe that existing MCP scanners and semantic guardrails perform poorly on this benchmark. Motivated by this finding, we propose ShieldNet, a network-level guardrail framework that detects supply-chain poisoning by observing real network interactions rather than surface-level tool traces. ShieldNet integrates a man-in-the-middle (MITM) proxy and an event extractor to identify critical network behaviors, which are then processed by a lightweight classifier for attack detection. Extensive experiments show that ShieldNet achieves strong detection performance (up to 0.995 F-1 with only 0.8% false positives) while introducing little runtime overhead, substantially outperforming existing MCP scanners and LLM-based guardrails.",
+      "authors": [
+        "Zhuowen Yuan",
+        "Zhaorun Chen",
+        "Zhen Xiang",
+        "Nathaniel D. Bastian",
+        "Seyyed Hadi Hashemi",
+        "Chaowei Xiao",
+        "Wenbo Guo",
+        "Bo Li"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.04426v1",
+      "rrf_rank": 26,
+      "rrf_score": 0.9196372877240186,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.06132v1",
+      "title": "Claw-Eval: Toward Trustworthy Evaluation of Autonomous Agents",
+      "abstract": "Large language models are increasingly deployed as autonomous agents executing multi-step workflows in real-world software environments. However, existing agent benchmarks suffer from three critical limitations: (1) trajectory-opaque grading that checks only final outputs, (2) underspecified safety and robustness evaluation, and (3) narrow modality coverage and interaction paradigms. We introduce Claw-Eval, an end-to-end evaluation suite addressing all three gaps. It comprises 300 human-verified tasks spanning 9 categories across three groups (general service orchestration, multimodal perception and generation, and multi-turn professional dialogue). Every agent action is recorded through three independent evidence channels (execution traces, audit logs, and environment snapshots), enabling trajectory-aware grading over 2,159 fine-grained rubric items. The scoring protocol evaluates Completion, Safety, and Robustness, reporting Average Score, Pass@k, and Pass^k across three trials to distinguish genuine capability from lucky outcomes. Experiments on 14 frontier models reveal that: (1) trajectory-opaque evaluation is systematically unreliable, missing 44% of safety violations and 13% of robustness failures that our hybrid pipeline catches; (2) controlled error injection primarily degrades consistency rather than peak capability, with Pass^3 dropping up to 24% while Pass@3 remains stable; (3) multimodal performance varies sharply, with most models performing poorer on video than on document or image, and no single model dominating across all modalities. Beyond benchmarking, Claw-Eval highlights actionable directions for agent development, shedding light on what it takes to build agents that are not only capable but reliably deployable.",
+      "authors": [
+        "Bowen Ye",
+        "Rang Li",
+        "Qibin Yang",
+        "Yuanxin Liu",
+        "Linli Yao",
+        "Hanglong Lv",
+        "Zhihui Xie",
+        "Chenxin An",
+        "Lei Li",
+        "Lingpeng Kong",
+        "Qi Liu",
+        "Zhifang Sui",
+        "Tong Yang"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.06132v1",
+      "rrf_rank": 27,
+      "rrf_score": 0.9190970955748008,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.06019v1",
+      "title": "CritBench: A Framework for Evaluating Cybersecurity Capabilities of Large Language Models in IEC 61850 Digital Substation Environments",
+      "abstract": "The advancement of Large Language Models (LLMs) has raised concerns regarding their dual-use potential in cybersecurity. Existing evaluation frameworks overwhelmingly focus on Information Technology (IT) environments, failing to capture the constraints, and specialized protocols of Operational Technology (OT). To address this gap, we introduce CritBench, a novel framework designed to evaluate the cybersecurity capabilities of LLM agents within IEC 61850 Digital Substation environments. We assess five state-of-the-art models, including OpenAI's GPT-5 suite and open-weight models, across a corpus of 81 domain-specific tasks spanning static configuration analysis, network traffic reconnaissance, and live virtual machine interaction. To facilitate industrial protocol interaction, we develop a domain-specific tool scaffold. Our empirical results show that agents reliably execute static structured-file analysis and single-tool network enumeration, but their performance degrades on dynamic tasks. Despite demonstrating explicit, internalized knowledge of the IEC 61850 standards terminology, current models struggle with the persistent sequential reasoning and state tracking required to manipulate live systems without specialized tools. Equipping agents with our domain-specific tool scaffold significantly mitigates this operational bottleneck. Code and evaluation scripts are available at: https://github.com/GKeppler/CritBench",
+      "authors": [
+        "Gustav Keppler",
+        "Moritz Gstür",
+        "Veit Hagenmeyer"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.06019v1",
+      "rrf_rank": 28,
+      "rrf_score": 0.9190642287575463,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.07988v1",
+      "title": "LogAct: Enabling Agentic Reliability via Shared Logs",
+      "abstract": "Agents are LLM-driven components that can mutate environments in powerful, arbitrary ways. Extracting guarantees for the execution of agents in production environments can be challenging due to asynchrony and failures. In this paper, we propose a new abstraction called LogAct, where each agent is a deconstructed state machine playing a shared log. In LogAct, agentic actions are visible in the shared log before they are executed; can be stopped prior to execution by pluggable, decoupled voters; and recovered consistently in the case of agent or environment failure. LogAct enables agentic introspection, allowing the agent to analyze its own execution history using LLM inference, which in turn enables semantic variants of recovery, health check, and optimization. In our evaluation, LogAct agents recover efficiently and correctly from failures; debug their own performance; optimize token usage in swarms; and stop all unwanted actions for a target model on a representative benchmark with just a 3% drop in benign utility.",
+      "authors": [
+        "Mahesh Balakrishnan",
+        "Ashwin Bharambe",
+        "Davide Testuggine",
+        "David Geraghty",
+        "David Mao",
+        "Vidhya Venkat",
+        "Ilya Mironov",
+        "Rithesh Baradi",
+        "Gayathri Aiyer",
+        "Victoria Dudin"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.07988v1",
+      "rrf_rank": 29,
+      "rrf_score": 0.9187511379077716,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.09155v1",
+      "title": "CORA: Conformal Risk-Controlled Agents for Safeguarded Mobile GUI Automation",
+      "abstract": "Graphical user interface (GUI) agents powered by vision language models (VLMs) are rapidly moving from passive assistance to autonomous operation. However, this unrestricted action space exposes users to severe and irreversible financial, privacy or social harm. Existing safeguards rely on prompt engineering, brittle heuristics and VLM-as-critic lack formal verification and user-tunable guarantees. We propose CORA (COnformal Risk-controlled GUI Agent), a post-policy, pre-action safeguarding framework that provides statistical guarantees on harmful executed actions. CORA reformulates safety as selective action execution: we train a Guardian model to estimate action-conditional risk for each proposed step. Rather than thresholding raw scores, we leverage Conformal Risk Control to calibrate an execute/abstain boundary that satisfies a user-specified risk budget and route rejected actions to a trainable Diagnostician model, which performs multimodal reasoning over rejected actions to recommend interventions (e.g., confirm, reflect, or abort) to minimize user burden. A Goal-Lock mechanism anchors assessment to a clarified, frozen user intent to resist visual injection attacks. To rigorously evaluate this paradigm, we introduce Phone-Harm, a new benchmark of mobile safety violations with step-level harm labels under real-world settings. Experiments on Phone-Harm and public benchmarks against diverse baselines validate that CORA improves the safety--helpfulness--interruption Pareto frontier, offering a practical, statistically grounded safety paradigm for autonomous GUI execution. Code and benchmark are available at cora-agent.github.io.",
+      "authors": [
+        "Yushi Feng",
+        "Junye Du",
+        "Qifan Wang",
+        "Zizhan Ma",
+        "Qian Niu",
+        "Yutaka Matsuo",
+        "Long Feng",
+        "Lequan Yu"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.09155v1",
+      "rrf_rank": 30,
+      "rrf_score": 0.9185779779084852,
+      "has_extracted_markdown": false
+    }
+  ]
+}

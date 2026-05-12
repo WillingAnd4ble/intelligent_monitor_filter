@@ -1,0 +1,473 @@
+{
+  "goal_id": "MCP_V2_deepseek",
+  "retriever": "bm25",
+  "top_k": 30,
+  "rrf_params": null,
+  "pulled_at": "2026-05-06T18:46:03.319457Z",
+  "papers": [
+    {
+      "paper_id": "2604.08388v1",
+      "title": "Awakening the Sleeping Agent: Lean-Specific Agentic Data Reactivates General Tool Use in Goedel Prover",
+      "abstract": "Heavy supervised fine-tuning on a target domain can strongly suppress capabilities that were present in the base model. We study this phenomenon in formal mathematics using Goedel-Prover-V2, an open-source model heavily trained on 1.8 million formal-math examples. After domain specialization, the model almost completely loses its ability to produce valid tool calls, even when explicitly instructed to use tools, dropping from 89.4% function-calling accuracy in the base model to nearly 0%. We ask whether this agentic collapse is permanent or instead reversible. To answer this question, we fine-tune the specialized model on a small amount of Lean-specific tool-use data. Remarkably, as few as 100 agentic traces are sufficient to restore strong tool-calling behavior. Importantly, this recovery is not the result of reward hacking or benchmark-specific optimization: the recovery data is entirely drawn from the Lean setting, where the model uses natural-language queries to search the Mathlib library for relevant theorems and lemmas, yet the regained capability transfers well beyond that domain. In particular, these same 100 Lean-specific traces improve performance on the Berkeley Function Calling Leaderboard from near zero to 83.8%, approaching the base model's 89.4% despite the mismatch in task distribution and protocol. The recovered capability is also practically useful in-domain. On ProofNet, pass@32 improves from 21.51% to 25.81%. Together, these results show that heavy domain supervised fine-tuning can suppress general tool-use ability without permanently erasing it, and that a small amount of domain-specific agentic data can awaken dormant tool-use capabilities.",
+      "authors": [
+        "Jui-Hui Chung",
+        "Hongzhou Lin",
+        "Lai Jiang",
+        "Shange Tang",
+        "Chi Jin"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.08388v1",
+      "rrf_rank": 1,
+      "rrf_score": 2.700000047683716,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.06795v1",
+      "title": "FedDAP: Domain-Aware Prototype Learning for Federated Learning under Domain Shift",
+      "abstract": "Federated Learning (FL) enables decentralized model training across multiple clients without exposing private data, making it ideal for privacy-sensitive applications. However, in real-world FL scenarios, clients often hold data from distinct domains, leading to severe domain shift and degraded global model performance. To address this, prototype learning has been emerged as a promising solution, which leverages class-wise feature representations. Yet, existing methods face two key limitations: (1) Existing prototype-based FL methods typically construct a $\\textit{single global prototype}$ per class by aggregating local prototypes from all clients without preserving domain information. (2) Current feature-prototype alignment is $\\textit{domain-agnostic}$, forcing clients to align with global prototypes regardless of domain origin. To address these challenges, we propose Federated Domain-Aware Prototypes (FedDAP) to construct domain-specific global prototypes by aggregating local client prototypes within the same domain using a similarity-weighted fusion mechanism. These global domain-specific prototypes are then used to guide local training by aligning local features with prototypes from the same domain, while encouraging separation from prototypes of different domains. This dual alignment enhances domain-specific learning at the local level and enables the global model to generalize across diverse domains. Finally, we conduct extensive experiments on three different datasets: DomainNet, Office-10, and PACS to demonstrate the effectiveness of our proposed framework to address the domain shift challenges. The code is available at https://github.com/quanghuy6997/FedDAP.",
+      "authors": [
+        "Huy Q. Le",
+        "Loc X. Nguyen",
+        "Yu Qiao",
+        "Seong Tae Kim",
+        "Eui-Nam Huh",
+        "Choong Seon Hong"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.06795v1",
+      "rrf_rank": 2,
+      "rrf_score": 2.5,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.07551v1",
+      "title": "MCP-DPT: A Defense-Placement Taxonomy and Coverage Analysis for Model Context Protocol Security",
+      "abstract": "The Model Context Protocol (MCP) enables large language models (LLMs) to dynamically discover and invoke third-party tools, significantly expanding agent capabilities while introducing a distinct security landscape. Unlike prompt-only interactions, MCP exposes pre-execution artifacts, shared context, multi-turn workflows, and third-party supply chains to adversarial influence across independently operated components. While recent work has identified MCP-specific attacks and evaluated defenses, existing studies are largely attack-centric or benchmark-driven, providing limited guidance on where mitigation responsibility should reside within the MCP architecture. This is problematic given MCP's multi-party design and distributed trust boundaries. We present a defense-placement-oriented security analysis of MCP, introducing a layer-aligned taxonomy that organizes attacks by the architectural component responsible for enforcement. Threats are mapped across six MCP layers, and primary and secondary defense points are identified to support principled defense-in-depth reasoning under adversaries controlling tools, servers, or ecosystem components. A structured mapping of existing academic and industry defenses onto this framework reveals uneven and predominantly tool-centric protection, with persistent gaps at the host orchestration, transport, and supply-chain layers. These findings suggest that many MCP security weaknesses stem from architectural misalignment rather than isolated implementation flaws.",
+      "authors": [
+        "Mehrdad Rostamzadeh",
+        "Sidhant Narula",
+        "Nahom Birhan",
+        "Mohammad Ghasemigol",
+        "Daniel Takabi"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.07551v1",
+      "rrf_rank": 3,
+      "rrf_score": 2.0,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.04174v1",
+      "title": "CoALFake: Collaborative Active Learning with Human-LLM Co-Annotation for Cross-Domain Fake News Detection",
+      "abstract": "The proliferation of fake news across diverse domains highlights critical limitations in current detection systems, which often exhibit narrow domain specificity and poor generalization. Existing cross-domain approaches face two key challenges: (1) reliance on labelled data, which is frequently unavailable and resource intensive to acquire and (2) information loss caused by rigid domain categorization or neglect of domain-specific features. To address these issues, we propose CoALFake, a novel approach for cross-domain fake news detection that integrates Human-Large Language Model (LLM) co-annotation with domain-aware Active Learning (AL). Our method employs LLMs for scalable, low-cost annotation while maintaining human oversight to ensure label reliability. By integrating domain embedding techniques, the CoALFake dynamically captures both domain specific nuances and cross-domain patterns, enabling the training of a domain agnostic model. Furthermore, a domain-aware sampling strategy optimizes sample acquisition by prioritizing diverse domain coverage. Experimental results across multiple datasets demonstrate that the proposed approach consistently outperforms various baselines. Our results emphasize that human-LLM co-annotation is a highly cost-effective approach that delivers excellent performance. Evaluations across several datasets show that CoALFake consistently outperforms a range of existing baselines, even with minimal human oversight.",
+      "authors": [
+        "Esma Aïmeur",
+        "Gilles Brassard",
+        "Dorsaf Sallami"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.04174v1",
+      "rrf_rank": 4,
+      "rrf_score": 1.899999976158142,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.01538v1",
+      "title": "Countering Catastrophic Forgetting of Large Language Models for Better Instruction Following via Weight-Space Model Merging",
+      "abstract": "Large language models have been adopted in the medical domain for clinical documentation to reduce clinician burden. However, studies have reported that LLMs often \"forget\" a significant amount of instruction-following ability when fine-tuned using a task-specific medical dataset, a critical challenge in adopting general-purpose LLMs for clinical applications. This study presents a model merging framework to efficiently adapt general-purpose LLMs to the medical domain by countering this forgetting issue. By merging a clinical foundation model (GatorTronLlama) with a general instruct model (Llama-3.1-8B-Instruct) via interpolation-based merge methods, we seek to derive a domain-adapted model with strong performance on clinical tasks while retaining instruction-following ability. Comprehensive evaluation across medical benchmarks and five clinical generation tasks (e.g., radiology and discharge summarization) shows that merged models can effectively mitigate catastrophic forgetting, preserve clinical domain expertise, and retain instruction-following ability. In addition, our model merging strategies demonstrate training efficiency, achieving performance on par with fully fine-tuned baselines under severely constrained supervision (e.g., 64-shot vs. 256-shot). Consequently, weight-space merging constitutes a highly scalable solution for adapting open-source LLMs to clinical applications, facilitating broader deployment in resource-constrained healthcare environments.",
+      "authors": [
+        "Mengxian Lyu",
+        "Cheng Peng",
+        "Ziyi Chen",
+        "Mengyuan Zhang",
+        "Jieting Li Lu",
+        "Yonghui Wu"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.01538v1",
+      "rrf_rank": 5,
+      "rrf_score": 1.7000000476837158,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.09494v1",
+      "title": "RecaLLM: Addressing the Lost-in-Thought Phenomenon with Explicit In-Context Retrieval",
+      "abstract": "We propose RecaLLM, a set of reasoning language models post-trained to make effective use of long-context information. In-context retrieval, which identifies relevant evidence from context, and reasoning are deeply intertwined: retrieval supports reasoning, while reasoning often determines what must be retrieved. However, their interaction remains largely underexplored. In preliminary experiments on several open-source LLMs, we observe that in-context retrieval performance substantially degrades even after a short reasoning span, revealing a key bottleneck for test-time scaling that we refer to as lost-in-thought: reasoning steps that improve performance also make subsequent in-context retrieval more challenging. To address this limitation, RecaLLM interleaves reasoning with explicit in-context retrieval, alternating between reasoning and retrieving context information needed to solve intermediate subproblems. We introduce a negligible-overhead constrained decoding mechanism that enables verbatim copying of evidence spans, improving the grounding of subsequent generation. Trained on diverse lexical and semantic retrieval tasks, RecaLLM achieves strong performance on two long-context benchmarks, RULER and HELMET, significantly outperforming baselines. Notably, we observe consistent gains at context windows of up to 128K tokens using training samples of at most 10K tokens, far shorter than those used by existing long-context approaches, highlighting a promising path toward improving long-context performance without expensive long-context training data.",
+      "authors": [
+        "Kyle Whitecross",
+        "Negin Rahimi"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.09494v1",
+      "rrf_rank": 6,
+      "rrf_score": 1.7000000476837158,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.01152v1",
+      "title": "Brainstacks: Cross-Domain Cognitive Capabilities via Frozen MoE-LoRA Stacks for Continual LLM Learning",
+      "abstract": "We present Brainstacks, a modular architecture for continual multi-domain fine-tuning of large language models that packages domain expertise as frozen adapter stacks composing additively on a shared frozen base at inference. Five interlocking components: (1) MoE-LoRA with Shazeer-style noisy top-2 routing across all seven transformer projections under QLoRA 4-bit quantization with rsLoRA scaling; (2) an inner loop performing residual boosting by freezing trained stacks and adding new ones; (3) an outer loop training sequential domain-specific stacks with curriculum-ordered dependencies; (4) null-space projection via randomized SVD constraining new stacks to subspaces orthogonal to prior directions, achieving zero forgetting in isolation; (5) an outcome-based sigmoid meta-router trained on empirically discovered domain-combination targets that selectively weights stacks, enabling cross-domain composition. Two boundary experiments: (6) PSN pretraining on a randomly initialized model; (7) per-domain RL (DPO/GRPO) validating compatibility with post-SFT alignment. Validated on TinyLlama-1.1B (4 domains, 9 stacks) and Gemma 3 12B IT (5 domains, 10 stacks), MoE-LoRA achieves 2.5x faster convergence than parameter-matched single LoRA, residual boosting breaks through the single-stack ceiling, and the routed system recovers generation quality destroyed by ungated stack accumulation. The central finding: the outcome-based router discovers that domain stacks encode transferable cognitive primitives (instruction-following clarity, numerical reasoning, procedural logic, chain-of-thought structure) rather than domain-specific knowledge, with medical prompts routing to chat+math stacks in 97% of cases despite zero medical data in those stacks.",
+      "authors": [
+        "Mohammad R. Abu Ayyash"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.01152v1",
+      "rrf_rank": 7,
+      "rrf_score": 1.600000023841858,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.06946v1",
+      "title": "An empirical study of LoRA-based fine-tuning of large language models for automated test case generation",
+      "abstract": "Automated test case generation from natural language requirements remains a challenging problem in software engineering due to the ambiguity of requirements and the need to produce structured, executable test artifacts. Recent advances in LLMs have shown promise in addressing this task; however, their effectiveness depends on task-specific adaptation and efficient fine-tuning strategies. In this paper, we present a comprehensive empirical study on the use of parameter-efficient fine-tuning, specifically LoRA, for requirement-based test case generation. We evaluate multiple LLM families, including open-source and proprietary models, under a unified experimental pipeline. The study systematically explores the impact of key LoRA hyperparameters, including rank, scaling factor, and dropout, on downstream performance. We propose an automated evaluation framework based on GPT-4o, which assesses generated test cases across nine quality dimensions. Experimental results demonstrate that LoRA-based fine-tuning significantly improves the performance of all open-source models, with Ministral-8B achieving the best results among them. Furthermore, we show that a fine-tuned 8B open-source model can achieve performance comparable to pre-fine-tuned GPT-4.1 models, highlighting the effectiveness of parameter-efficient adaptation. While GPT-4.1 models achieve the highest overall performance, the performance gap between proprietary and open-source models is substantially reduced after fine-tuning. These findings provide important insights into model selection, fine-tuning strategies, and evaluation methods for automated test generation. In particular, they demonstrate that cost-efficient, locally deployable open-source models can serve as viable alternatives to proprietary systems when combined with well-designed fine-tuning approaches.",
+      "authors": [
+        "Milad Moradi",
+        "Ke Yan",
+        "David Colwell",
+        "Rhona Asgari"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.06946v1",
+      "rrf_rank": 8,
+      "rrf_score": 1.600000023841858,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.08722v1",
+      "title": "AI Driven Soccer Analysis Using Computer Vision",
+      "abstract": "Sport analysis is crucial for team performance since it provides actionable data that can inform coaching decisions, improve player performance, and enhance team strategies. To analyze more complex features from game footage, a computer vision model can be used to identify and track key entities from the field. We propose the use of an object detection and tracking system to predict player positioning throughout the game. To translate this to positioning in relation to the field dimensions, we use a point prediction model to identify key points on the field and combine these with known field dimensions to extract actual distances. For the player-identification model, object detection models like YOLO and Faster R-CNN are evaluated on the accuracy of our custom video footage using multiple different evaluation metrics. The goal is to identify the best model for object identification to obtain the most accurate results when paired with SAM2 (Segment Anything Model 2) for segmentation and tracking. For the key point detection model, we use a CNN model to find consistent locations in the soccer field. Through homography, the positions of points and objects in the camera perspective will be transformed to a real-ground perspective. The segmented player masks from SAM2 are transformed from camera perspective to real-world field coordinates through homography, regardless of camera angle or movement. The transformed real-world coordinates can be used to calculate valuable tactical insights including player speed, distance covered, positioning heatmaps, and more complex team statistics, providing coaches and players with actionable performance data previously unavailable from standard video analysis.",
+      "authors": [
+        "Adrian Manchado",
+        "Tanner Cellio",
+        "Jonathan Keane",
+        "Yiyang Wang"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.08722v1",
+      "rrf_rank": 9,
+      "rrf_score": 1.5,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.07612v1",
+      "title": "Towards Real-Time Human-AI Musical Co-Performance: Accompaniment Generation with Latent Diffusion Models and MAX/MSP",
+      "abstract": "We present a framework for real-time human-AI musical co-performance, in which a latent diffusion model generates instrumental accompaniment in response to a live stream of context audio. The system combines a MAX/MSP front-end-handling real-time audio input, buffering, and playback-with a Python inference server running the generative model, communicating via OSC/UDP messages. This allows musicians to perform in MAX/MSP - a well-established, real-time capable environment - while interacting with a large-scale Python-based generative model, overcoming the fundamental disconnect between real-time music tools and state-of-the-art AI models. We formulate accompaniment generation as a sliding-window look-ahead protocol, training the model to predict future audio from partial context, where system latency is a critical constraint. To reduce latency, we apply consistency distillation to our diffusion model, achieving a 5.4x reduction in sampling time, with both models achieving real-time operation. Evaluated on musical coherence, beat alignment, and audio quality, both models achieve strong performance in the Retrospective regime and degrade gracefully as look-ahead increases. These results demonstrate the feasibility of diffusion-based real-time accompaniment and expose the fundamental trade-off between model latency, look-ahead depth, and generation quality that any such system must navigate.",
+      "authors": [
+        "Tornike Karchkhadze",
+        "Shlomo Dubnov"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.07612v1",
+      "rrf_rank": 10,
+      "rrf_score": 1.399999976158142,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.06019v1",
+      "title": "CritBench: A Framework for Evaluating Cybersecurity Capabilities of Large Language Models in IEC 61850 Digital Substation Environments",
+      "abstract": "The advancement of Large Language Models (LLMs) has raised concerns regarding their dual-use potential in cybersecurity. Existing evaluation frameworks overwhelmingly focus on Information Technology (IT) environments, failing to capture the constraints, and specialized protocols of Operational Technology (OT). To address this gap, we introduce CritBench, a novel framework designed to evaluate the cybersecurity capabilities of LLM agents within IEC 61850 Digital Substation environments. We assess five state-of-the-art models, including OpenAI's GPT-5 suite and open-weight models, across a corpus of 81 domain-specific tasks spanning static configuration analysis, network traffic reconnaissance, and live virtual machine interaction. To facilitate industrial protocol interaction, we develop a domain-specific tool scaffold. Our empirical results show that agents reliably execute static structured-file analysis and single-tool network enumeration, but their performance degrades on dynamic tasks. Despite demonstrating explicit, internalized knowledge of the IEC 61850 standards terminology, current models struggle with the persistent sequential reasoning and state tracking required to manipulate live systems without specialized tools. Equipping agents with our domain-specific tool scaffold significantly mitigates this operational bottleneck. Code and evaluation scripts are available at: https://github.com/GKeppler/CritBench",
+      "authors": [
+        "Gustav Keppler",
+        "Moritz Gstür",
+        "Veit Hagenmeyer"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.06019v1",
+      "rrf_rank": 11,
+      "rrf_score": 1.399999976158142,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.09101v1",
+      "title": "CLIP-Inspector: Model-Level Backdoor Detection for Prompt-Tuned CLIP via OOD Trigger Inversion",
+      "abstract": "Organisations with limited data and computational resources increasingly outsource model training to Machine Learning as a Service (MLaaS) providers, who adapt vision-language models (VLMs) such as CLIP to downstream tasks via prompt tuning rather than training from scratch. This semi-honest setting creates a security risk where a malicious provider can follow the prompt-tuning protocol yet implant a backdoor, forcing triggered inputs to be classified into an attacker-chosen class, even for out-of-distribution (OOD) data. Such backdoors leave encoders untouched, making them undetectable to existing methods that focus on encoder corruption. Other data-level methods that sanitize data before training or during inference, also fail to answer the critical question, \"Is the delivered model backdoored or not?\" To address this model-level verification problem, we introduce CLIP-Inspector (CI), a backdoor detection method designed for prompt-tuned CLIP models. Assuming white-box access to the delivered model and a pool of unlabeled OOD images, CI reconstructs possible triggers for each class to determine if the model exhibits backdoor behaviour or not. Additionally, we demonstrate that using CI's reconstructed trigger for fine-tuning on correctly labeled triggered inputs enables us to re-align the model and reduce backdoor effectiveness. Through extensive experiments across ten datasets and four backdoor attacks, we demonstrate that CI can reconstruct effective triggers in a single epoch using only 1,000 OOD images, achieving a 94% detection accuracy (47/50 models). Compared to adapted trigger-inversion baselines, CI yields a markedly higher AUROC score (0.973 vs 0.495/0.687), thus enabling the vetting and post-hoc repair of prompt-tuned CLIP models to ensure safe deployment.",
+      "authors": [
+        "Akshit Jindal",
+        "Saket Anand",
+        "Chetan Arora",
+        "Vikram Goyal"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.09101v1",
+      "rrf_rank": 12,
+      "rrf_score": 1.399999976158142,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.01770v1",
+      "title": "Domain-constrained knowledge representation: A modal framework",
+      "abstract": "Knowledge graphs store large numbers of relations efficiently, but they remain weak at representing a quieter difficulty: the meaning of a concept often shifts with the domain in which it is used. A triple such as Apple, instance-of, Company may be acceptable in one setting while being misleading or unusable in another. In most current systems, domain information is attached as metadata, qualifiers, or graph-level organization. These mechanisms help with filtering and provenance, but they usually do not alter the formal status of the assertion itself. This paper argues that domain should be treated as part of knowledge representation rather than as supplementary annotation. It introduces the Domain-Contextualized Concept Graph (DCG), a framework in which domain is written into the relation and interpreted as a modal world constraint. In the DCG form (C, R at D, C'), the marker at D identifies the world in which the relation holds. Formally, the relation is interpreted through a domain-indexed necessity operator, so that truth, inference, and conflict checking are all scoped to the relevant world. This move has three consequences: ambiguous concepts can be disambiguated at the point of representation; invalid assertions can be challenged against their domain; cross-domain relations can be connected through explicit predicates. The paper develops this claim through a Kripke-style semantics, a compact predicate system, a Prolog implementation, and mappings to RDF, OWL, and relational databases. The contribution is a representational reinterpretation of domain itself. The central claim is that many practical failures in knowledge systems begin when domain is treated as external to the assertion. DCG addresses that by giving domain a structural and computable role inside the representation.",
+      "authors": [
+        "Chao Li",
+        "Yuru Wang",
+        "Chunyi Zhao"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.01770v1",
+      "rrf_rank": 13,
+      "rrf_score": 1.399999976158142,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.08712v1",
+      "title": "Model Space Reasoning as Search in Feedback Space for Planning Domain Generation",
+      "abstract": "The generation of planning domains from natural language descriptions remains an open problem even with the advent of large language models and reasoning models. Recent work suggests that while LLMs have the ability to assist with domain generation, they are still far from producing high quality domains that can be deployed in practice. To this end, we investigate the ability of an agentic language model feedback framework to generate planning domains from natural language descriptions that have been augmented with a minimal amount of symbolic information. In particular, we evaluate the quality of the generated domains under various forms of symbolic feedback, including landmarks, and output from the VAL plan validator. Using these feedback mechanisms, we experiment using heuristic search over model space to optimize domain quality.",
+      "authors": [
+        "James Oswald",
+        "Daniel Oblinsky",
+        "Volodymyr Varha",
+        "Vasilije Dragovic",
+        "Harsha Kokel",
+        "Kavitha Srinivas",
+        "Michael Katz",
+        "Shirin Sohrabi"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.08712v1",
+      "rrf_rank": 14,
+      "rrf_score": 1.399999976158142,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.01610v1",
+      "title": "GraphWalk: Enabling Reasoning in Large Language Models through Tool-Based Graph Navigation",
+      "abstract": "The use of knowledge graphs for grounding agents in real-world Q&A applications has become increasingly common. Answering complex queries often requires multi-hop reasoning and the ability to navigate vast relational structures. Standard approaches rely on prompting techniques that steer large language models to reason over raw graph context, or retrieval-augmented generation pipelines where relevant subgraphs are injected into the context. These, however, face severe limitations with enterprise-scale KGs that cannot fit in even the largest context windows available today. We present GraphWalk, a problem-agnostic, training-free, tool-based framework that allows off-the-shelf LLMs to reason through sequential graph navigation, dramatically increasing performance across different tasks. Unlike task-specific agent frameworks that encode domain knowledge into specialized tools, GraphWalk equips the LLM with a minimal set of orthogonal graph operations sufficient to traverse any graph structure. We evaluate whether models equipped with GraphWalk can compose these operations into correct multi-step reasoning chains, where each tool call represents a verifiable step creating a transparent execution trace. We first demonstrate our approach on maze traversal, a problem non-reasoning models are completely unable to solve, then present results on graphs resembling real-world enterprise knowledge graphs. To isolate structural reasoning from world knowledge, we evaluate on entirely synthetic graphs with random, non-semantic labels. Our benchmark spans 12 query templates from basic retrieval to compound first-order logic queries. Results show that tool-based traversal yields substantial and consistent gains over in-context baselines across all model families tested, with gains becoming more pronounced as scale increases, precisely where in-context approaches fail catastrophically.",
+      "authors": [
+        "Taraneh Ghandi",
+        "Hamidreza Mahyar",
+        "Shachar Klaiman"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.01610v1",
+      "rrf_rank": 15,
+      "rrf_score": 1.399999976158142,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.06349v1",
+      "title": "Bi-Level Optimization for Single Domain Generalization",
+      "abstract": "Generalizing from a single labeled source domain to unseen target domains, without access to any target data during training, remains a fundamental challenge in robust machine learning. We address this underexplored setting, known as Single Domain Generalization (SDG), by proposing BiSDG, a bi-level optimization framework that explicitly decouples task learning from domain modeling. BiSDG simulates distribution shifts through surrogate domains constructed via label-preserving transformations of the source data. To capture domain-specific context, we propose a domain prompt encoder that generates lightweight modulation signals to produce augmenting features via feature-wise linear modulation. The learning process is formulated as a bi-level optimization problem: the inner objective optimizes task performance under fixed prompts, while the outer objective maximizes generalization across the surrogate domains by updating the domain prompt encoder. We further develop a practical gradient approximation scheme that enables efficient bi-level training without second-order derivatives. Extensive experiments on various SGD benchmarks demonstrate that BiSDG consistently outperforms prior methods, setting new state-of-the-art performance in the SDG setting.",
+      "authors": [
+        "Marzi Heidari",
+        "Hanping Zhang",
+        "Hao Yan",
+        "Yuhong Guo"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.06349v1",
+      "rrf_rank": 16,
+      "rrf_score": 1.3000000715255737,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.07652v1",
+      "title": "Bridging Natural Language and Interactive What-If Interfaces via LLM-Generated Declarative Specification",
+      "abstract": "What-if analysis (WIA) is an iterative, multi-step process where users explore and compare hypothetical scenarios by adjusting parameters, applying constraints, and scoping data through interactive interfaces. Current tools fall short of supporting effective interactive WIA: spreadsheet and BI tools require time-consuming and laborious setup, while LLM-based chatbot interfaces are semantically fragile, frequently misinterpret intent, and produce inconsistent results as conversations progress. To address these limitations, we present a two-stage workflow that translates natural language (NL) WIA questions into interactive visual interfaces via an intermediate representation, powered by the Praxa Specification Language (PSL): first, LLMs generate PSL specifications from NL questions capturing analytical intent and logic, enabling validation and repair of erroneous specifications; and second, the specifications are compiled into interactive visual interfaces with parameter controls and linked visualizations. We benchmark this workflow with 405 WIA questions spanning 11 WIA types, 5 datasets, and 3 state-of-the-art LLMs. The results show that across models, half of specifications (52.42%) are generated correctly without intervention. We perform an analysis of the failure cases and derive an error taxonomy spanning non-functional errors (specifications fail to compile) and functional errors (specifications compile but misrepresent intent). Based on the taxonomy, we apply targeted repairs on the failure cases using few-shot prompts and improve the success rate to 80.42%. Finally, we show how undetected functional errors propagate through compilation into plausible but misleading interfaces, demonstrating that the intermediate specification is critical for reliably bridging NL and interactive WIA interface in LLM-powered WIA systems.",
+      "authors": [
+        "Sneha Gathani",
+        "Sirui Zeng",
+        "Diya Patel",
+        "Ryan Rossi",
+        "Dan Marshall",
+        "Cagatay Demiralp",
+        "Steven Drucker",
+        "Zhicheng Liu"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.07652v1",
+      "rrf_rank": 17,
+      "rrf_score": 1.3000000715255737,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.07809v1",
+      "title": "PolicyLong: Towards On-Policy Context Extension",
+      "abstract": "Extending LLM context windows is hindered by scarce high-quality long-context data. Recent methods synthesize data with genuine long-range dependencies via information-theoretic verification, selecting contexts that reduce a base model's predictive entropy. However, their single-pass offline construction with a fixed model creates a fundamental off-policy gap: the static screening landscape misaligns with the model's evolving capabilities, causing the training distribution to drift. We propose PolicyLong, shifting data construction towards a dynamic on-policy paradigm. By iteratively re-executing data screening (entropy computation, retrieval, and verification) using the current model, PolicyLong ensures the training distribution tracks evolving capabilities, yielding an emergent self-curriculum. Crucially, both positive and hard negative contexts derive from the current model's entropy landscape, co-evolving what the model learns to exploit and resist. Experiments on RULER, HELMET, and LongBench-v2 (Qwen2.5-3B) show PolicyLong consistently outperforms EntropyLong and NExtLong, with gains growing at longer contexts (e.g., +2.54 at 128K on RULER), confirming the value of on-policy data evolution.",
+      "authors": [
+        "Junlong Jia",
+        "Ziyang Chen",
+        "Xing Wu",
+        "Chaochen Gao",
+        "TingHao Yu",
+        "Feng Zhang",
+        "Songlin Hu"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.07809v1",
+      "rrf_rank": 18,
+      "rrf_score": 1.3000000715255737,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.01765v1",
+      "title": "DriveDreamer-Policy: A Geometry-Grounded World-Action Model for Unified Generation and Planning",
+      "abstract": "Recently, world-action models (WAM) have emerged to bridge vision-language-action (VLA) models and world models, unifying their reasoning and instruction-following capabilities and spatio-temporal world modeling. However, existing WAM approaches often focus on modeling 2D appearance or latent representations, with limited geometric grounding-an essential element for embodied systems operating in the physical world. We present DriveDreamer-Policy, a unified driving world-action model that integrates depth generation, future video generation, and motion planning within a single modular architecture. The model employs a large language model to process language instructions, multi-view images, and actions, followed by three lightweight generators that produce depth, future video, and actions. By learning a geometry-aware world representation and using it to guide both future prediction and planning within a unified framework, the proposed model produces more coherent imagined futures and more informed driving actions, while maintaining modularity and controllable latency. Experiments on the Navsim v1 and v2 benchmarks demonstrate that DriveDreamer-Policy achieves strong performance on both closed-loop planning and world generation tasks. In particular, our model reaches 89.2 PDMS on Navsim v1 and 88.7 EPDMS on Navsim v2, outperforming existing world-model-based approaches while producing higher-quality future video and depth predictions. Ablation studies further show that explicit depth learning provides complementary benefits to video imagination and improves planning robustness.",
+      "authors": [
+        "Yang Zhou",
+        "Xiaofeng Wang",
+        "Hao Shao",
+        "Letian Wang",
+        "Guosheng Zhao",
+        "Jiangnan Shao",
+        "Jiagang Zhu",
+        "Tingdong Yu",
+        "Zheng Zhu",
+        "Guan Huang",
+        "Steven L. Waslander"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.01765v1",
+      "rrf_rank": 19,
+      "rrf_score": 1.3000000715255737,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.02259v1",
+      "title": "Retrieval-Augmented Question Answering over Scientific Literature for the Electron-Ion Collider",
+      "abstract": "To harness the power of Language Models in answering domain specific specialized technical questions, Retrieval Augmented Generation (RAG) is been used widely. In this work, we have developed a Q\\&A application inspired by the Retrieval Augmented Generation (RAG), which is comprised of an in-house database indexed on the arXiv articles related to the Electron-Ion Collider (EIC) experiment - one of the largest international scientific collaboration and incorporated an open-source LLaMA model for answer generation. This is an extension to it's proceeding application built on proprietary model and Cloud-hosted external knowledge-base for the EIC experiment. This locally-deployed RAG-system offers a cost-effective, resource-constraint alternative solution to build a RAG-assisted Q\\&A application on answering domain-specific queries in the field of experimental nuclear physics. This set-up facilitates data-privacy, avoids sending any pre-publication scientific data and information to public domain. Future improvement will expand the knowledge base to encompass heterogeneous EIC-related publications and reports and upgrade the application pipeline orchestration to the LangGraph framework.",
+      "authors": [
+        "Tina. J. Jat",
+        "T. Ghosh",
+        "Karthik Suresh"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.02259v1",
+      "rrf_rank": 20,
+      "rrf_score": 1.3000000715255737,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.07960v1",
+      "title": "TOOLCAD: Exploring Tool-Using Large Language Models in Text-to-CAD Generation with Reinforcement Learning",
+      "abstract": "Computer-Aided Design (CAD) is an expert-level task that relies on long-horizon reasoning and coherent modeling actions. Large Language Models (LLMs) have shown remarkable advancements in enabling language agents to tackle real-world tasks. Notably, there has been no investigation into how tool-using LLMs optimally interact with CAD engines, hindering the emergence of LLM-based agentic text-to-CAD modeling systems. We propose ToolCAD, a novel agentic CAD framework deploying LLMs as tool-using agents for text-to-CAD generation. Furthermore, we introduce an interactive CAD modeling gym to rollout reasoning and tool-augmented interaction trajectories with the CAD engine, incorporating hybrid feedback and human supervision. Meanwhile, an end-to-end post-training strategy is presented to enable the LLM agent to elicit refined CAD Modeling Chain of Thought (CAD-CoT) and evolve into proficient CAD tool-using agents via online curriculum reinforcement learning. Our findings demonstrate ToolCAD fills the gap in adopting and training open-source LLMs for CAD tool-using agents, enabling them to perform comparably to proprietary models, paving the way for more accessible and robust autonomous text-to-CAD modeling systems.",
+      "authors": [
+        "Yifei Gong",
+        "Xing Wu",
+        "Wenda Liu",
+        "Kang Tu"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.07960v1",
+      "rrf_rank": 21,
+      "rrf_score": 1.3000000715255737,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.01532v1",
+      "title": "PHMForge: A Scenario-Driven Agentic Benchmark for Industrial Asset Lifecycle Maintenance",
+      "abstract": "Large language model (LLM) agents are increasingly deployed for complex tool-orchestration tasks, yet existing benchmarks fail to capture the rigorous demands of industrial domains where incorrect decisions carry significant safety and financial consequences. To address this critical gap, we introduce PHMForge, the first comprehensive benchmark specifically designed to evaluate LLM agents on Prognostics and Health Management (PHM) tasks through realistic interactions with domain-specific MCP servers. Our benchmark encompasses 75 expert-curated scenarios spanning 7 industrial asset classes (turbofan engines, bearings, electric motors, gearboxes, aero-engines) across 5 core task categories: Remaining Useful Life (RUL) Prediction, Fault Classification, Engine Health Analysis, Cost-Benefit Analysis, and Safety/Policy Evaluation. To enable rigorous evaluation, we construct 65 specialized tools across two MCP servers and implement execution-based evaluators with task-commensurate metrics: MAE/RMSE for regression, F1-score for classification, and categorical matching for health assessments. Through extensive evaluation of leading frameworks (ReAct, Cursor Agent, Claude Code) paired with frontier LLMs (Claude Sonnet 4.0, GPT-4o, Granite-3.0-8B), we find that even top-performing configurations achieve only 68\\% task completion, with systematic failures in tool orchestration (23\\% incorrect sequencing), multi-asset reasoning (14.9 percentage point degradation), and cross-equipment generalization (42.7\\% on held-out datasets). We open-source our complete benchmark, including scenario specifications, ground truth templates, tool implementations, and evaluation scripts, to catalyze research in agentic industrial AI.",
+      "authors": [
+        "Ayan Das",
+        "Dhaval Patel"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.01532v1",
+      "rrf_rank": 22,
+      "rrf_score": 1.3000000715255737,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.01965v1",
+      "title": "Do We Need Bigger Models for Science? Task-Aware Retrieval with Small Language Models",
+      "abstract": "Scientific knowledge discovery increasingly relies on large language models, yet many existing scholarly assistants depend on proprietary systems with tens or hundreds of billions of parameters. Such reliance limits reproducibility and accessibility for the research community. In this work, we ask a simple question: do we need bigger models for scientific applications? Specifically, we investigate to what extent carefully designed retrieval pipelines can compensate for reduced model scale in scientific applications. We design a lightweight retrieval-augmented framework that performs task-aware routing to select specialized retrieval strategies based on the input query. The system further integrates evidence from full-text scientific papers and structured scholarly metadata, and employs compact instruction-tuned language models to generate responses with citations. We evaluate the framework across several scholarly tasks, focusing on scholarly question answering (QA), including single- and multi-document scenarios, as well as biomedical QA under domain shift and scientific text compression. Our findings demonstrate that retrieval and model scale are complementary rather than interchangeable. While retrieval design can partially compensate for smaller models, model capacity remains important for complex reasoning tasks. This work highlights retrieval and task-aware design as key factors for building practical and reproducible scholarly assistants.",
+      "authors": [
+        "Florian Kelber",
+        "Matthias Jobst",
+        "Yuni Susanti",
+        "Michael Färber"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.01965v1",
+      "rrf_rank": 23,
+      "rrf_score": 1.3000000715255737,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.02002v1",
+      "title": "How and why does deep ensemble coupled with transfer learning increase performance in bipolar disorder and schizophrenia classification?",
+      "abstract": "Transfer learning (TL) and deep ensemble learning (DE) have recently been shown to outperform simple machine learning in classifying psychiatric disorders. However, there is still a lack of understanding as to why that is. This paper aims to understand how and why DE and TL reduce the variability of single-subject classification models in bipolar disorder (BD) and schizophrenia (SCZ). To this end, we investigated the training stability of TL and DE models. For the two classification tasks under consideration, we compared the results of multiple trainings with the same backbone but with different initializations. In this way, we take into account the epistemic uncertainty associated with the uncertainty in the estimation of the model parameters. It has been shown that the performance of classifiers can be significantly improved by using TL with DE. Based on these results, we investigate i) how many models are needed to benefit from the performance improvement of DE when classifying BD and SCZ from healthy controls, and ii) how TL induces better generalization, with and without DE. In the first case, we show that DE reaches a plateau when 10 models are included in the ensemble. In the second case, we find that using a pre-trained model constrains TL models with the same pre-training to stay in the same basin of the loss function. This is not the case for DL models with randomly initialized weights.",
+      "authors": [
+        "Sara Petiton",
+        "Antoine Grigis",
+        "Benoit Dufumier",
+        "Edouard Duchesnay"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.02002v1",
+      "rrf_rank": 24,
+      "rrf_score": 1.3000000715255737,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.07320v1",
+      "title": "Evaluating In-Context Translation with Synchronous Context-Free Grammar Transduction",
+      "abstract": "Low-resource languages pose a challenge for machine translation with large language models (LLMs), which require large amounts of training data. One potential way to circumvent this data dependence is to rely on LLMs' ability to use in-context descriptions of languages, like textbooks and dictionaries. To do so, LLMs must be able to infer the link between the languages' grammatical descriptions and the sentences in question. Here we isolate this skill using a formal analogue of the task: string transduction based on a formal grammar provided in-context. We construct synchronous context-free grammars which define pairs of formal languages designed to model particular aspects of natural language grammar, morphology, and written representation. Using these grammars, we measure how well LLMs can translate sentences from one formal language into another when given both the grammar and the source-language sentence. We vary the size of the grammar, the lengths of the sentences, the syntactic and morphological properties of the languages, and their written script. We note three key findings. First, LLMs' translation accuracy decreases markedly as a function of grammar size and sentence length. Second, differences in morphology and written representation between the source and target languages can strongly diminish model performance. Third, we examine the types of errors committed by models and find they are most prone to recall the wrong words from the target language vocabulary, hallucinate new words, or leave source-language words untranslated.",
+      "authors": [
+        "Jackson Petty",
+        "Jaulie Goe",
+        "Tal Linzen"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.07320v1",
+      "rrf_rank": 25,
+      "rrf_score": 1.2000000476837158,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.09489v1",
+      "title": "XFED: Non-Collusive Model Poisoning Attack Against Byzantine-Robust Federated Classifiers",
+      "abstract": "Model poisoning attacks pose a significant security threat to Federated Learning (FL). Most existing model poisoning attacks rely on collusion, requiring adversarial clients to coordinate by exchanging local benign models and synchronizing the generation of their poisoned updates. However, sustaining such coordination is increasingly impractical in real-world FL deployments, as it effectively requires botnet-like control over many devices. This approach is costly to maintain and highly vulnerable to detection. This context raises a fundamental question: Can model poisoning attacks remain effective without any communication between attackers? To address this challenge, we introduce and formalize the \\textbf{non-collusive attack model}, in which all compromised clients share a common adversarial objective but operate independently. Under this model, each attacker generates its malicious update without communicating with other adversaries, accessing other clients' updates, or relying on any knowledge of server-side defenses. To demonstrate the feasibility of this threat model, we propose \\textbf{XFED}, the first aggregation-agnostic, non-collusive model poisoning attack. Our empirical evaluation across six benchmark datasets shows that XFED bypasses eight state-of-the-art defenses and outperforms six existing model poisoning attacks. These findings indicate that FL systems are substantially less secure than previously believed and underscore the urgent need for more robust and practical defense mechanisms.",
+      "authors": [
+        "Israt Jahan Mouri",
+        "Muhammad Ridowan",
+        "Muhammad Abdullah Adnan"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.09489v1",
+      "rrf_rank": 26,
+      "rrf_score": 1.2000000476837158,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.03779v1",
+      "title": "CountsDiff: A Diffusion Model on the Natural Numbers for Generation and Imputation of Count-Based Data",
+      "abstract": "Diffusion models have excelled at generative tasks for both continuous and token-based domains, but their application to discrete ordinal data remains underdeveloped. We present CountsDiff, a diffusion framework designed to natively model distributions on the natural numbers. CountsDiff extends the Blackout diffusion framework by simplifying its formulation through a direct parameterization in terms of a survival probability schedule and an explicit loss weighting. This introduces flexibility through design parameters with direct analogues in existing diffusion modeling frameworks. Beyond this reparameterization, CountsDiff introduces features from modern diffusion models, previously absent in counts-based domains, including continuous-time training, classifier-free guidance, and churn/remasking reverse dynamics that allow non-monotone reverse trajectories. We propose an initial instantiation of CountsDiff and validate it on natural image datasets (CIFAR-10, CelebA), exploring the effects of varying the introduced design parameters in a complex, well-studied, and interpretable data domain. We then highlight biological count assays as a natural use case, evaluating CountsDiff on single-cell RNA-seq imputation in a fetal cell and heart cell atlas. Remarkably, we find that even this simple instantiation matches or surpasses the performance of a state-of-the-art discrete generative model and leading RNA-seq imputation methods, while leaving substantial headroom for further gains through optimized design choices in future work.",
+      "authors": [
+        "Renzo G. Soatto",
+        "Anders Hoel",
+        "Greycen Ren",
+        "Shorna Alam",
+        "Stephen Bates",
+        "Nikolaos P. Daskalakis",
+        "Caroline Uhler",
+        "Maria Skoularidou"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.03779v1",
+      "rrf_rank": 27,
+      "rrf_score": 1.2000000476837158,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.04088v1",
+      "title": "Embedding Enhancement via Fine-Tuned Language Models for Learner-Item Cognitive Modeling",
+      "abstract": "Learner-item cognitive modeling plays a central role in the web-based online intelligent education system by enabling cognitive diagnosis (CD) across diverse online educational scenarios. Although ID embedding remains the mainstream approach in cognitive modeling due to its effectiveness and flexibility, recent advances in language models (LMs) have introduced new possibilities for incorporating rich semantic representations to enhance CD performance. This highlights the need for a comprehensive analysis of how LMs enhance embeddings through semantic integration across mainstream CD tasks. This paper identifies two key challenges in fully leveraging LMs in existing work: Misalignment between the training objectives of LMs and CD models creates a distribution gap in feature spaces; A unified framework is essential for integrating textual embeddings across varied CD tasks while preserving the strengths of existing cognitive modeling paradigms to ensure the robustness of embedding enhancement. To address these challenges, this paper introduces EduEmbed, a unified embedding enhancement framework that leverages fine-tuned LMs to enrich learner-item cognitive modeling across diverse CD tasks. EduEmbed operates in two stages. In the first stage, we fine-tune LMs based on role-specific representations and an interaction diagnoser to bridge the semantic gap of CD models. In the second stage, we employ a textual adapter to extract task-relevant semantics and integrate them with existing modeling paradigms to improve generalization. We evaluate the proposed framework on four CD tasks and computerized adaptive testing (CAT) task, achieving robust performance. Further analysis reveals the impact of semantic information across diverse tasks, offering key insights for future research on the application of LMs in CD for online intelligent education systems.",
+      "authors": [
+        "Yuanhao Liu",
+        "Zihan Zhou",
+        "Kaiying Wu",
+        "Shuo Liu",
+        "Yiyang Huang",
+        "Jiajun Guo",
+        "Aimin Zhou",
+        "Hong Qian"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.04088v1",
+      "rrf_rank": 28,
+      "rrf_score": 1.2000000476837158,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.07121v1",
+      "title": "Mixed-Initiative Context: Structuring and Managing Context for Human-AI Collaboration",
+      "abstract": "In the human-AI collaboration area, the context formed naturally through multi-turn interactions is typically flattened into a chronological sequence and treated as a fixed whole in subsequent reasoning, with no mechanism for dynamic organization and management along the collaboration workflow. Yet these contexts differ substantially in lifecycle, structural hierarchy, and relevance. For instance, temporary or abandoned exchanges and parallel topic threads persist in the limited context window, causing interference and even conflict. Meanwhile, users are largely limited to influencing context indirectly through input modifications (e.g., corrections, references, or ignoring), leaving their control neither explicit nor verifiable.   To address this, we propose Mixed-Initiative Context, which reconceptualizes the context formed across multi-turn interactions as an explicit, structured, and manipulable interactive object. Under this concept, the structure, scope, and content of context can be dynamically organized and adjusted according to task needs, enabling both humans and AI to actively participate in context construction and regulation. To explore this concept, we implement Contextify as a probe system and conduct a user study examining users' context management behaviors, attitudes toward AI initiative, and overall collaboration experience. We conclude by discussing the implications of this concept for the HCI community.",
+      "authors": [
+        "Haichang Li",
+        "Qinshi Zhang",
+        "Piaohong Wang",
+        "Zhicong Lu"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.07121v1",
+      "rrf_rank": 29,
+      "rrf_score": 1.2000000476837158,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.05969v1",
+      "title": "A Formal Security Framework for MCP-Based AI Agents: Threat Taxonomy, Verification Models, and Defense Mechanisms",
+      "abstract": "The Model Context Protocol (MCP), introduced by Anthropic in November 2024 and now governed by the Linux Foundation's Agentic AI Foundation, has rapidly become the de facto standard for connecting large language model (LLM)-based agents to external tools and data sources, with over 97 million monthly SDK downloads and more than 177000 registered tools. However, this explosive adoption has exposed a critical gap: the absence of a unified, formal security framework capable of systematically characterizing, analyzing, and mitigating the diverse threats facing MCP-based agent ecosystems. Existing security research remains fragmented across individual attack papers, isolated benchmarks, and point defense mechanisms. This paper presents MCPSHIELD, a comprehensive formal security framework for MCP-based AI agents. We make four principal contributions: (1) a hierarchical threat taxonomy comprising 7 threat categories and 23 distinct attack vectors organized across four attack surfaces, grounded in the analysis of over 177000 MCP tools; (2) a formal verification model based on labeled transition systems with trust boundary annotations that enables static and runtime analysis of MCP tool interaction chains; (3) a systematic comparative evaluation of 12 existing defense mechanisms, identifying coverage gaps across our threat taxonomy; and (4) a defense in depth reference architecture integrating capability based access control, cryptographic tool attestation, information flow tracking, and runtime policy enforcement. Our analysis reveals that no existing single defense covers more than 34 percent of the identified threat landscape, whereas MCPSHIELD's integrated architecture achieves theoretical coverage of 91 percent. We further identify seven open research challenges that must be addressed to secure the next generation of agentic AI systems.",
+      "authors": [
+        "Nirajan Acharya",
+        "Gaurav Kumar Gupta"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.05969v1",
+      "rrf_rank": 30,
+      "rrf_score": 1.2000000476837158,
+      "has_extracted_markdown": false
+    }
+  ]
+}

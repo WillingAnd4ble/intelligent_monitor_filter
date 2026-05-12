@@ -97,7 +97,7 @@ export default function LandingPage() {
       </section>
 
       <footer className="mx-auto max-w-[1120px] border-t border-stone-200 px-7 py-10 text-center text-sm text-ink-muted">
-        arXiv Lens — editorial warm UI, olive & wheat. No blue primaries.
+        arXiv Lens
       </footer>
     </div>
   );

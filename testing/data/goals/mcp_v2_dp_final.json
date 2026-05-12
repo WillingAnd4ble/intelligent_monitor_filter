@@ -1,0 +1,34 @@
+{
+  "goal_id": "mcp_v2_dp_final",
+  "raw_goal": "I want to learn about the Model Context Protocol (MCP) ecosystem to build my own MCP server. I want papers that present applications, use cases, or domain-specific MCP server implementations — concrete examples of MCP being deployed (e.g., MCP for code analysis, MCP for scientific workflows, MCP for healthcare data, MCP for enterprise tools). I want to see what kinds of problems people are solving with MCP. Not interested in: papers that only mention MCP in passing as one of several agent frameworks, MCP security/attack papers, or pure MCP protocol-design proposals without an application",
+  "distilled_criteria": [
+    {
+      "id": "c1",
+      "text": "Paper explicitly presents a concrete MCP server implementation or application (e.g., code analysis, scientific workflows, healthcare, enterprise tools)."
+    },
+    {
+      "id": "c2",
+      "text": "Paper's primary contribution is a use case or domain-specific deployment of MCP, not a general agent framework or protocol design."
+    },
+    {
+      "id": "c3",
+      "text": "Paper does NOT focus on MCP security, attacks, or vulnerabilities."
+    },
+    {
+      "id": "c4",
+      "text": "Paper does NOT mention MCP only in passing as one of several agent frameworks."
+    },
+    {
+      "id": "c5",
+      "text": "Paper includes implementation details, evaluation, or case study of the MCP server in a specific domain."
+    }
+  ],
+  "lexical_query": "Model Context Protocol MCP server implementation application domain-specific use case",
+  "scoring_rule": {
+    "type": "majority",
+    "threshold": 3
+  },
+  "frozen_at": "2026-05-06T18:48:25.849005Z",
+  "distiller_model": "deepseek/deepseek-v4-flash",
+  "dataset_id": null
+}

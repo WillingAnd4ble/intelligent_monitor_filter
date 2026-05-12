@@ -1,0 +1,33 @@
+{
+  "goal_id": "security_v1_2",
+  "raw_goal": "I am interested in application of llm agents in discovering hybrid information attacks. And how they practically applied.",
+  "distilled_criteria": [
+    {
+      "id": "c1",
+      "text": "Application of LLM agents"
+    },
+    {
+      "id": "c2",
+      "text": "Discovery of hybrid information attacks"
+    },
+    {
+      "id": "c3",
+      "text": "Practical implementation examples"
+    },
+    {
+      "id": "c4",
+      "text": "Focus on cybersecurity"
+    },
+    {
+      "id": "c5",
+      "text": "Analysis of attack methodologies"
+    }
+  ],
+  "lexical_query": "LLM agents hybrid information attacks practical application",
+  "scoring_rule": {
+    "type": "majority",
+    "threshold": 3
+  },
+  "frozen_at": "2026-05-06T06:57:39.740662Z",
+  "distiller_model": "gpt-4o-mini"
+}

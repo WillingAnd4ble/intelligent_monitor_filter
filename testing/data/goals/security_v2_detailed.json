@@ -1,0 +1,42 @@
+{
+  "goal_id": "security_v2_detailed",
+  "raw_goal": "I work on an agent security team researching prompt injection and jailbreak attacks against LLM-based agents (tool-using systems, computer-use agents, multi-agent frameworks). I want papers proposing novel attack techniques or concrete defense mechanisms for agentic systems. Not interested in: general LLM safety alignment (RLHF, constitutional AI), model-level jailbreaks against standalone chatbots, or new benchmarks/evaluation suites unless they introduce a fundamentally new threat model.",
+  "distilled_criteria": [
+    {
+      "id": "c1",
+      "text": "Research on prompt injection attacks against LLM-based agents"
+    },
+    {
+      "id": "c2",
+      "text": "Research on jailbreak attacks specifically targeting tool-using systems"
+    },
+    {
+      "id": "c3",
+      "text": "Papers proposing novel attack techniques for multi-agent frameworks"
+    },
+    {
+      "id": "c4",
+      "text": "Papers detailing concrete defense mechanisms for agentic systems"
+    },
+    {
+      "id": "c5",
+      "text": "Exclusion of general LLM safety alignment topics"
+    },
+    {
+      "id": "c6",
+      "text": "Exclusion of model-level jailbreaks against standalone chatbots"
+    },
+    {
+      "id": "c7",
+      "text": "Exclusion of new benchmarks or evaluation suites unless introducing a new threat model"
+    }
+  ],
+  "lexical_query": "prompt injection jailbreak attack LLM agent security defense mechanisms multi-agent frameworks",
+  "scoring_rule": {
+    "type": "majority",
+    "threshold": 4
+  },
+  "frozen_at": "2026-05-06T09:57:17.851412Z",
+  "distiller_model": "gpt-4o-mini",
+  "dataset_id": null
+}

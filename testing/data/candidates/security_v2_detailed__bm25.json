@@ -1,0 +1,8 @@
+{
+  "goal_id": "security_v2_detailed",
+  "retriever": "bm25",
+  "top_k": 30,
+  "rrf_params": null,
+  "pulled_at": "2026-05-06T09:57:45.359993Z",
+  "papers": []
+}
