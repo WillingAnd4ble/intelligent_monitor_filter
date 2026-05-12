@@ -30,20 +30,22 @@ async def update_user_settings(
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_db)
 ):
-    """Validates configuration properties injecting them natively securely avoiding malicious overwrite structures."""
+    """Persist settings. On filtering_goal change, chain GoalDistiller → full|light pipeline."""
     result = await session.execute(
         select(UserSettings).where(UserSettings.user_id == user.id)
     )
     settings_obj = result.scalars().first()
-    
+
     if not settings_obj:
         raise HTTPException(status_code=404, detail="Settings missing.")
-    
-    # Executing dynamic exclude updates patching directly utilizing validated schema logic natively!
-    update_data = settings_in.model_dump(exclude_unset=True)
 
-    # Track whether filtering_goal changed to trigger distiller
-    goal_changed = "filtering_goal" in update_data and update_data["filtering_goal"] != settings_obj.filtering_goal
+    update_data = settings_in.model_dump(exclude_unset=True)
+    goal_changed = (
+        "filtering_goal" in update_data
+        and update_data["filtering_goal"] != settings_obj.filtering_goal
+    )
+    # Snapshot BEFORE mutating settings_obj — we need the pre-save value
+    was_onboarded = bool(settings_obj.onboarding_completed)
 
     for key, value in update_data.items():
         setattr(settings_obj, key, value)
@@ -51,9 +53,15 @@ async def update_user_settings(
     await session.commit()
     await session.refresh(settings_obj)
 
-    # Trigger GoalDistiller when filtering_goal is updated
     if goal_changed:
-        from app.worker.celery_app import trigger_goal_distiller
-        trigger_goal_distiller.delay(str(user.id))
+        from celery import chain
+        from app.worker.celery_app import (
+            trigger_goal_distiller, run_full_pipeline, run_light_pipeline,
+        )
+        pipeline_task = run_light_pipeline if was_onboarded else run_full_pipeline
+        chain(
+            trigger_goal_distiller.si(str(user.id)),
+            pipeline_task.si(str(user.id)),
+        ).apply_async()
 
     return settings_obj
