@@ -33,6 +33,7 @@ class UserSettings(Base):
     notification_time = Column(String, nullable=True)
     deep_scan_limit = Column(Integer, default=10)  # How many papers get Marker+Deep Reader (5/10/15)
     pdf_parser_mode = Column(String, default="pypdfium")
+    onboarding_completed = Column(Boolean, nullable=False, server_default="false", default=False)
 
     user = relationship("User", back_populates="settings")
 
