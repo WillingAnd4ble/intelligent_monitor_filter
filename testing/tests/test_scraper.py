@@ -6,11 +6,63 @@ All HTTP calls are mocked — no real network traffic.
 
 import time
 from unittest.mock import patch, MagicMock, AsyncMock
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 import pytest
+from freezegun import freeze_time
 
 from conftest import SAMPLE_ARXIV_XML
+
+
+# ---------------------------------------------------------------------------
+# default_daily_window_utc — weekday / weekend window logic
+# ---------------------------------------------------------------------------
+
+class TestDefaultDailyWindowUtc:
+    """Tue–Fri → yesterday only. Sat–Mon → Fri 00:00 → Sun 23:59:59 (covers weekend)."""
+
+    @freeze_time("2026-05-13 09:00:00")  # Wednesday
+    def test_weekday_returns_yesterday_window(self):
+        from app.worker.arxiv_scraper import default_daily_window_utc
+        since, until = default_daily_window_utc()
+        assert since == datetime(2026, 5, 12, 0, 0, 0, tzinfo=timezone.utc)
+        assert until == datetime(2026, 5, 12, 23, 59, 59, tzinfo=timezone.utc)
+
+    @freeze_time("2026-05-15 09:00:00")  # Friday
+    def test_friday_returns_thursday_window(self):
+        from app.worker.arxiv_scraper import default_daily_window_utc
+        since, until = default_daily_window_utc()
+        assert since == datetime(2026, 5, 14, 0, 0, 0, tzinfo=timezone.utc)
+        assert until == datetime(2026, 5, 14, 23, 59, 59, tzinfo=timezone.utc)
+
+    @freeze_time("2026-05-18 09:00:00")  # Monday
+    def test_monday_returns_friday_through_sunday_window(self):
+        from app.worker.arxiv_scraper import default_daily_window_utc
+        since, until = default_daily_window_utc()
+        assert since == datetime(2026, 5, 15, 0, 0, 0, tzinfo=timezone.utc)   # Fri 00:00
+        assert until == datetime(2026, 5, 17, 23, 59, 59, tzinfo=timezone.utc)  # Sun 23:59:59
+
+    @freeze_time("2026-05-16 09:00:00")  # Saturday
+    def test_saturday_returns_friday_window(self):
+        from app.worker.arxiv_scraper import default_daily_window_utc
+        since, until = default_daily_window_utc()
+        # Sat morning: yesterday was Friday — just take Friday's window
+        assert since == datetime(2026, 5, 15, 0, 0, 0, tzinfo=timezone.utc)
+        assert until == datetime(2026, 5, 15, 23, 59, 59, tzinfo=timezone.utc)
+
+    @freeze_time("2026-05-17 09:00:00")  # Sunday
+    def test_sunday_returns_friday_through_saturday_window(self):
+        from app.worker.arxiv_scraper import default_daily_window_utc
+        since, until = default_daily_window_utc()
+        assert since == datetime(2026, 5, 15, 0, 0, 0, tzinfo=timezone.utc)   # Fri 00:00
+        assert until == datetime(2026, 5, 16, 23, 59, 59, tzinfo=timezone.utc)  # Sat 23:59:59
+
+    def test_accepts_explicit_now_override(self):
+        from app.worker.arxiv_scraper import default_daily_window_utc
+        now = datetime(2026, 5, 13, 9, 0, 0, tzinfo=timezone.utc)  # Wednesday
+        since, until = default_daily_window_utc(now)
+        assert since == datetime(2026, 5, 12, 0, 0, 0, tzinfo=timezone.utc)
+        assert until == datetime(2026, 5, 12, 23, 59, 59, tzinfo=timezone.utc)
 
 
 # ---------------------------------------------------------------------------

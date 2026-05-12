@@ -2,7 +2,7 @@ import time
 import logging
 import urllib.request
 import xml.etree.ElementTree as ET
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from sqlalchemy import func as sa_func
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.models import Paper
@@ -32,6 +32,37 @@ def _throttle_arxiv():
         logger.info(f"ArXiv rate limit: sleeping {wait:.1f}s")
         time.sleep(wait)
     _last_arxiv_request_time = time.monotonic()
+
+
+def default_daily_window_utc(now: datetime | None = None) -> tuple[datetime, datetime]:
+    """
+    Default (since, until) UTC half-open window for the daily fetch.
+
+    Rules (UTC weekday, Monday=0):
+      Tue (1), Wed (2), Thu (3), Fri (4): yesterday 00:00:00 → yesterday 23:59:59.
+      Sat (5): yesterday (Fri) 00:00:00 → yesterday (Fri) 23:59:59.
+      Sun (6): two days ago (Fri) 00:00:00 → yesterday (Sat) 23:59:59.
+      Mon (0): three days ago (Fri) 00:00:00 → yesterday (Sun) 23:59:59.
+
+    The Sat/Sun/Mon branches cover the arXiv weekend quiet period.
+    Caller can pass their own since/until to override entirely.
+    """
+    if now is None:
+        now = datetime.now(timezone.utc)
+    today_midnight = datetime(now.year, now.month, now.day, tzinfo=timezone.utc)
+    weekday = now.weekday()  # Mon=0..Sun=6
+
+    if weekday == 0:           # Monday → cover Fri 00:00 .. Sun 23:59
+        since = today_midnight - timedelta(days=3)
+        until = today_midnight - timedelta(seconds=1)
+    elif weekday == 6:         # Sunday → cover Fri 00:00 .. Sat 23:59
+        since = today_midnight - timedelta(days=2)
+        until = today_midnight - timedelta(seconds=1)
+    else:                      # Tue..Sat → cover yesterday only
+        since = today_midnight - timedelta(days=1)
+        until = today_midnight - timedelta(seconds=1)
+
+    return since, until
 
 
 def _build_query_url(search_query: str, start: int, page_size: int) -> str:
