@@ -54,6 +54,22 @@ def _make_session():
 
 
 # ─────────────────────────────────────────────────────────────────────
+# Single-flight per user (15-minute Redis lock)
+# ─────────────────────────────────────────────────────────────────────
+
+def _user_pipeline_lock(user_id: str):
+    """Return a Redis lock for `pipeline:user:{user_id}` with 15-min TTL.
+
+    Used to drop duplicate pipeline runs when a user double-clicks Save
+    or two triggers race. Callers MUST .acquire(blocking=False) and check
+    the return value; if False, log and bail out — do not raise.
+    """
+    import redis
+    client = redis.Redis.from_url(settings.REDIS_URL)
+    return client.lock(f"pipeline:user:{user_id}", timeout=15 * 60)
+
+
+# ─────────────────────────────────────────────────────────────────────
 # Scheduler
 # ─────────────────────────────────────────────────────────────────────
 
@@ -126,28 +142,78 @@ def trigger_goal_distiller(user_id: str):
 
 
 # ─────────────────────────────────────────────────────────────────────
-# Main Pipeline: Cascade Agentic Funnel (v2)
+# Main Pipeline: Cascade Agentic Funnel (v3 — mode-aware)
 # ─────────────────────────────────────────────────────────────────────
 
-@celery_app.task(name="pipeline.run_discovery", bind=True)
-def trigger_agent_discovery(self, user_id: str):
-    """Cascade pipeline: RRF → Phase 1 (Evaluator+Critique) → Marker → Phase 2 (Deep Reader) → Top Picks."""
-    from app.worker.arxiv_scraper import fetch_arxiv_papers, ingest_papers
+def _run_pipeline(
+    self,
+    user_id: str,
+    mode: str,
+    since_iso: str | None = None,
+    until_iso: str | None = None,
+):
+    """Run the cascade pipeline in `light` or `full` mode.
+
+    light: scrape → ingest → RRF → Phase 1 → write accepted papers to feed → STOP.
+           Used for goal changes — fast, no Marker, no Deep Reader, no notification.
+    full:  light prefix + top-K Marker + Deep Reader + top-3 is_top_pick + notification.
+           Used for first-run (after registration), scheduled hourly tick, and ad-hoc trigger.
+    """
+    from app.worker.arxiv_scraper import (
+        fetch_arxiv_papers, ingest_papers, default_daily_window_utc,
+    )
     from app.db.retrieval import perform_hybrid_rrf_search
     from app.agents.graph import phase1_graph, run_deep_reader
     from app.worker.modal_client import marker_extract_pdf
     from app.db.models import UserSettings, UserPaper, Paper, FeedbackMemory, User
     from app.worker.notifications import notify_top_picks
+    from datetime import datetime, timezone
+    import json
+    import time
     import uuid
     import logging
 
+    assert mode in ("light", "full"), f"invalid pipeline mode: {mode!r}"
+
     logger = logging.getLogger(__name__)
+    t_start = time.monotonic()
+
+    # Resolve window: explicit override > default_daily_window_utc()
+    if since_iso and until_iso:
+        since = datetime.fromisoformat(since_iso)
+        until = datetime.fromisoformat(until_iso)
+    else:
+        since, until = default_daily_window_utc()
+
+    # Structured telemetry — start
+    logger.info(json.dumps({
+        "event": "pipeline.start",
+        "user_id": user_id,
+        "mode": mode,
+        "since": since.isoformat(),
+        "until": until.isoformat(),
+        "ts": time.time(),
+    }))
+
+    # Single-flight Redis lock — drop duplicates silently
+    lock = _user_pipeline_lock(user_id)
+    if not lock.acquire(blocking=False):
+        logger.info(json.dumps({
+            "event": "pipeline.skipped_locked",
+            "user_id": user_id,
+            "mode": mode,
+            "ts": time.time(),
+        }))
+        return
 
     def _update(stage: str, progress: int):
         self.update_state(state="PROGRESS", meta={"stage": stage, "progress": progress})
 
     async def _run():
         engine, SessionLocal = _make_session()
+        phase1_accepted_count = 0
+        phase2_count = 0
+        top_pick_count = 0
 
         try:
             async with SessionLocal() as session:
@@ -160,8 +226,8 @@ def trigger_agent_discovery(self, user_id: str):
                 # ── 1. Scrape + ingest ArXiv papers ────────────────────
                 _update("Fetching ArXiv papers", 10)
                 cat_query = "+OR+".join(f"cat:{cat}" for cat in categories)
-                logger.info(f"[pipeline:{user_id[:8]}] Fetching ArXiv papers for: {categories}")
-                papers = fetch_arxiv_papers(cat_query, max_results=200)
+                logger.info(f"[pipeline:{user_id[:8]}] Fetching ArXiv [{since.isoformat()} → {until.isoformat()}] for: {categories}")
+                papers = fetch_arxiv_papers(cat_query, since=since, until=until, max_results=200)
                 logger.info(f"[pipeline:{user_id[:8]}] Fetched {len(papers)} papers, ingesting...")
                 _update("Ingesting papers", 15)
                 await ingest_papers(session, papers)
@@ -229,6 +295,7 @@ def trigger_agent_discovery(self, user_id: str):
                             "evaluator_decision": "borderline",
                             "evaluator_score": 0.0,
                             "evaluator_reasonbook": "",
+                            "evaluator_user_explanation": "",
                             "critique_decision": True,
                             "critique_reasonbook": "",
                         }
@@ -264,27 +331,53 @@ def trigger_agent_discovery(self, user_id: str):
                         continue
 
                 await session.commit()
-                logger.info(f"[pipeline:{user_id[:8]}] Phase 1 complete — {len(phase1_results)} accepted")
+                phase1_accepted_count = len(phase1_results)
+                logger.info(f"[pipeline:{user_id[:8]}] Phase 1 complete — {phase1_accepted_count} accepted")
 
                 if not phase1_results:
                     logger.info(f"[pipeline:{user_id[:8]}] No papers passed Phase 1, pipeline done")
                     return
 
+                # ── Light mode short-circuit ──────────────────────────
+                # Persist every accepted paper to feed using the evaluator's
+                # user_explanation (fall back to the score-summary string only
+                # when user_explanation is missing). No Marker, no Deep Reader,
+                # no notification, no onboarding flip.
+                if mode == "light":
+                    _update("Light mode: writing feed", 80)
+                    for cand, state in phase1_results:
+                        ue = (state.get("evaluator_user_explanation") or "").strip()
+                        fallback = f"Passed abstract screening (score: {state.get('evaluator_score', 0):.1f}/10)."
+                        session.add(UserPaper(
+                            user_id=uuid.UUID(user_id),
+                            paper_id=cand["id"],
+                            status="feed",
+                            agent_score=state.get("evaluator_score"),
+                            agent_explanation=ue or fallback,
+                        ))
+                    await session.commit()
+                    logger.info(f"[pipeline:{user_id[:8]}] Light mode done — {phase1_accepted_count} papers in feed")
+                    return
+
                 _update("Sorting candidates", 55)
-                # ── 5. Sort by evaluator score → take top K ───────────
+                # ── 5. (full mode) Sort by evaluator score → take top K ──
                 deep_scan_limit = user_settings.deep_scan_limit or 10
                 phase1_results.sort(key=lambda x: x[1].get("evaluator_score", 0), reverse=True)
                 top_k = phase1_results[:deep_scan_limit]
 
-                # Save remaining accepted papers (beyond top K) directly to feed without deep reading
+                # K+1..N: write to feed using evaluator user_explanation (Bug #1 fix)
                 for cand, state in phase1_results[deep_scan_limit:]:
+                    ue = (state.get("evaluator_user_explanation") or "").strip()
+                    fallback = (
+                        f"Passed abstract screening (score: {state.get('evaluator_score', 0):.1f}/10). "
+                        f"Not deep-scanned due to scan limit ({deep_scan_limit})."
+                    )
                     session.add(UserPaper(
                         user_id=uuid.UUID(user_id),
                         paper_id=cand["id"],
                         status="feed",
                         agent_score=state.get("evaluator_score"),
-                        agent_explanation=f"Passed abstract screening (score: {state.get('evaluator_score', 0):.1f}/10). "
-                                          f"Not deep-scanned due to scan limit ({deep_scan_limit}).",
+                        agent_explanation=ue or fallback,
                     ))
                 await session.commit()
 
@@ -337,7 +430,7 @@ def trigger_agent_discovery(self, user_id: str):
 
                 _update("Saving results", 90)
                 # ── 8. Save results + select top 3 picks ──────────────
-                feed_papers = []  # (UserPaper, Paper) for notification
+                feed_papers = []  # (UserPaper, candidate dict, deep_score)
 
                 for (cand, eval_state), md_text, dr_result in zip(top_k, markdown_results, deep_results):
                     dr_decision = dr_result.get("decision", "reject")
@@ -367,14 +460,15 @@ def trigger_agent_discovery(self, user_id: str):
                         f"(eval_score={eval_state.get('evaluator_score')}, deep_score={dr_score})"
                     )
 
+                phase2_count = len(top_k)
+
                 # Mark top 3 as top picks (only if score >= 7.0)
                 TOP_PICK_MIN_SCORE = 7.0
                 feed_papers.sort(key=lambda x: x[2], reverse=True)
-                top_picks_count = 0
                 for up, cand, score in feed_papers[:3]:
                     if score >= TOP_PICK_MIN_SCORE:
                         up.is_top_pick = True
-                        top_picks_count += 1
+                        top_pick_count += 1
                         logger.info(f"[pipeline:{user_id[:8]}] TOP PICK: '{cand['id']}' (score={score})")
                     else:
                         logger.info(f"[pipeline:{user_id[:8]}] Skipped top pick '{cand['id']}' — score {score} < {TOP_PICK_MIN_SCORE}")
@@ -382,15 +476,24 @@ def trigger_agent_discovery(self, user_id: str):
                 await session.commit()
 
                 total_feed = len(feed_papers)
-                total_rejected_phase2 = len(top_k) - total_feed
+                total_rejected_phase2 = phase2_count - total_feed
                 logger.info(
                     f"[pipeline:{user_id[:8]}] Pipeline complete — "
-                    f"Phase1: {len(phase1_results)} accepted, "
-                    f"Deep scanned: {len(top_k)}, "
+                    f"Phase1: {phase1_accepted_count} accepted, "
+                    f"Deep scanned: {phase2_count}, "
                     f"Feed: {total_feed}, "
                     f"Rejected by Deep Reader: {total_rejected_phase2}, "
-                    f"Top picks: {top_picks_count}"
+                    f"Top picks: {top_pick_count}"
                 )
+
+                # ── Onboarding flip: only in full mode, only on success,
+                # only if previously False. Runs before notifications so
+                # a notify_top_picks failure (SMTP, etc.) doesn't trap the
+                # user in onboarding forever.
+                if not user_settings.onboarding_completed:
+                    user_settings.onboarding_completed = True
+                    await session.commit()
+                    logger.info(f"[pipeline:{user_id[:8]}] onboarding_completed → True")
 
                 _update("Sending notifications", 95)
                 # ── 9. Notifications for top picks ─────────────────────
@@ -425,7 +528,48 @@ def trigger_agent_discovery(self, user_id: str):
         finally:
             await engine.dispose()
 
-    _run_async(_run())
+        return phase1_accepted_count, phase2_count, top_pick_count
+
+    try:
+        counts = _run_async(_run())
+        phase1_accepted_count, phase2_count, top_pick_count = counts or (0, 0, 0)
+    finally:
+        try:
+            lock.release()
+        except Exception:
+            pass
+
+    # Structured telemetry — end
+    logger.info(json.dumps({
+        "event": "pipeline.end",
+        "user_id": user_id,
+        "mode": mode,
+        "duration_ms": int((time.monotonic() - t_start) * 1000),
+        "phase1_count": phase1_accepted_count,
+        "phase2_count": phase2_count,
+        "top_pick_count": top_pick_count,
+        "ts": time.time(),
+    }))
+
+
+@celery_app.task(name="pipeline.run_full", bind=True)
+def run_full_pipeline(self, user_id: str, since_iso: str | None = None, until_iso: str | None = None):
+    """Full cascade: Phase 1 + Phase 2 + notifications. Flips onboarding_completed=True."""
+    _run_pipeline(self, user_id, mode="full", since_iso=since_iso, until_iso=until_iso)
+
+
+@celery_app.task(name="pipeline.run_light", bind=True)
+def run_light_pipeline(self, user_id: str, since_iso: str | None = None, until_iso: str | None = None):
+    """Light: Phase 1 only. No Marker, no Deep Reader, no notification."""
+    _run_pipeline(self, user_id, mode="light", since_iso=since_iso, until_iso=until_iso)
+
+
+# Legacy alias so existing callers (Beat schedule, pipeline.py, settings.py before refactor)
+# keep working. Routes to full mode.
+@celery_app.task(name="pipeline.run_discovery", bind=True)
+def trigger_agent_discovery(self, user_id: str):
+    """Legacy entry point — kept so any code still calling `trigger_agent_discovery` runs full mode."""
+    _run_pipeline(self, user_id, mode="full")
 
 
 # ─────────────────────────────────────────────────────────────────────
