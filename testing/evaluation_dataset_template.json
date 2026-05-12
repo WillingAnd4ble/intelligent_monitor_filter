@@ -8,6 +8,14 @@
   ],
   "papers": [
     {
+      "paper_id": "2605.02888v1",
+      "title": "Multi-Agent Coordination via Large Language Models",
+      "abstract": "We propose a framework where multiple LLM-based agents coordinate through natural language to solve complex planning tasks. Our approach uses a shared communication protocol and achieves state-of-the-art results on collaborative benchmarks.",
+      "full_text": "We propose a framework where multiple LLM-based agents coordinate through natural language to solve complex planning tasks. Our approach uses a shared communication protocol and achieves state-of-the-art results on collaborative benchmarks. Section 3: Methodology. We design a multi-agent system with N agents, each powered by GPT-4. Agents communicate via structured JSON messages. Section 4: Experiments. We evaluate on ALFWorld and WebShop benchmarks, showing 23% improvement over single-agent baselines.",
+      "ground_truth": 1,
+      "tags": ["relevant", "multi-agent", "llm"]
+    },
+    {
       "paper_id": "2404.12345",
       "title": "Multi-Agent Coordination via Large Language Models",
       "abstract": "We propose a framework where multiple LLM-based agents coordinate through natural language to solve complex planning tasks. Our approach uses a shared communication protocol and achieves state-of-the-art results on collaborative benchmarks.",

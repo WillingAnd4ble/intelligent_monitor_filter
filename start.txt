@@ -2,3 +2,7 @@
 
 
 cd /c/Users/Work/Documents/Studie/Intelligent_filter/Building_planning_station
+
+
+
+python pdf_to_md.py current_version_04_18.pdf

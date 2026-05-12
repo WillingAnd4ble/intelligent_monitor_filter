@@ -1,0 +1,489 @@
+{
+  "goal_id": "MCP_v1_test",
+  "retriever": "bm25",
+  "top_k": 30,
+  "rrf_params": null,
+  "pulled_at": "2026-05-06T18:21:54.673414Z",
+  "papers": [
+    {
+      "paper_id": "2604.09494v1",
+      "title": "RecaLLM: Addressing the Lost-in-Thought Phenomenon with Explicit In-Context Retrieval",
+      "abstract": "We propose RecaLLM, a set of reasoning language models post-trained to make effective use of long-context information. In-context retrieval, which identifies relevant evidence from context, and reasoning are deeply intertwined: retrieval supports reasoning, while reasoning often determines what must be retrieved. However, their interaction remains largely underexplored. In preliminary experiments on several open-source LLMs, we observe that in-context retrieval performance substantially degrades even after a short reasoning span, revealing a key bottleneck for test-time scaling that we refer to as lost-in-thought: reasoning steps that improve performance also make subsequent in-context retrieval more challenging. To address this limitation, RecaLLM interleaves reasoning with explicit in-context retrieval, alternating between reasoning and retrieving context information needed to solve intermediate subproblems. We introduce a negligible-overhead constrained decoding mechanism that enables verbatim copying of evidence spans, improving the grounding of subsequent generation. Trained on diverse lexical and semantic retrieval tasks, RecaLLM achieves strong performance on two long-context benchmarks, RULER and HELMET, significantly outperforming baselines. Notably, we observe consistent gains at context windows of up to 128K tokens using training samples of at most 10K tokens, far shorter than those used by existing long-context approaches, highlighting a promising path toward improving long-context performance without expensive long-context training data.",
+      "authors": [
+        "Kyle Whitecross",
+        "Negin Rahimi"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.09494v1",
+      "rrf_rank": 1,
+      "rrf_score": 1.7000000476837158,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.08388v1",
+      "title": "Awakening the Sleeping Agent: Lean-Specific Agentic Data Reactivates General Tool Use in Goedel Prover",
+      "abstract": "Heavy supervised fine-tuning on a target domain can strongly suppress capabilities that were present in the base model. We study this phenomenon in formal mathematics using Goedel-Prover-V2, an open-source model heavily trained on 1.8 million formal-math examples. After domain specialization, the model almost completely loses its ability to produce valid tool calls, even when explicitly instructed to use tools, dropping from 89.4% function-calling accuracy in the base model to nearly 0%. We ask whether this agentic collapse is permanent or instead reversible. To answer this question, we fine-tune the specialized model on a small amount of Lean-specific tool-use data. Remarkably, as few as 100 agentic traces are sufficient to restore strong tool-calling behavior. Importantly, this recovery is not the result of reward hacking or benchmark-specific optimization: the recovery data is entirely drawn from the Lean setting, where the model uses natural-language queries to search the Mathlib library for relevant theorems and lemmas, yet the regained capability transfers well beyond that domain. In particular, these same 100 Lean-specific traces improve performance on the Berkeley Function Calling Leaderboard from near zero to 83.8%, approaching the base model's 89.4% despite the mismatch in task distribution and protocol. The recovered capability is also practically useful in-domain. On ProofNet, pass@32 improves from 21.51% to 25.81%. Together, these results show that heavy domain supervised fine-tuning can suppress general tool-use ability without permanently erasing it, and that a small amount of domain-specific agentic data can awaken dormant tool-use capabilities.",
+      "authors": [
+        "Jui-Hui Chung",
+        "Hongzhou Lin",
+        "Lai Jiang",
+        "Shange Tang",
+        "Chi Jin"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.08388v1",
+      "rrf_rank": 2,
+      "rrf_score": 1.600000023841858,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.08722v1",
+      "title": "AI Driven Soccer Analysis Using Computer Vision",
+      "abstract": "Sport analysis is crucial for team performance since it provides actionable data that can inform coaching decisions, improve player performance, and enhance team strategies. To analyze more complex features from game footage, a computer vision model can be used to identify and track key entities from the field. We propose the use of an object detection and tracking system to predict player positioning throughout the game. To translate this to positioning in relation to the field dimensions, we use a point prediction model to identify key points on the field and combine these with known field dimensions to extract actual distances. For the player-identification model, object detection models like YOLO and Faster R-CNN are evaluated on the accuracy of our custom video footage using multiple different evaluation metrics. The goal is to identify the best model for object identification to obtain the most accurate results when paired with SAM2 (Segment Anything Model 2) for segmentation and tracking. For the key point detection model, we use a CNN model to find consistent locations in the soccer field. Through homography, the positions of points and objects in the camera perspective will be transformed to a real-ground perspective. The segmented player masks from SAM2 are transformed from camera perspective to real-world field coordinates through homography, regardless of camera angle or movement. The transformed real-world coordinates can be used to calculate valuable tactical insights including player speed, distance covered, positioning heatmaps, and more complex team statistics, providing coaches and players with actionable performance data previously unavailable from standard video analysis.",
+      "authors": [
+        "Adrian Manchado",
+        "Tanner Cellio",
+        "Jonathan Keane",
+        "Yiyang Wang"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.08722v1",
+      "rrf_rank": 3,
+      "rrf_score": 1.5,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.06946v1",
+      "title": "An empirical study of LoRA-based fine-tuning of large language models for automated test case generation",
+      "abstract": "Automated test case generation from natural language requirements remains a challenging problem in software engineering due to the ambiguity of requirements and the need to produce structured, executable test artifacts. Recent advances in LLMs have shown promise in addressing this task; however, their effectiveness depends on task-specific adaptation and efficient fine-tuning strategies. In this paper, we present a comprehensive empirical study on the use of parameter-efficient fine-tuning, specifically LoRA, for requirement-based test case generation. We evaluate multiple LLM families, including open-source and proprietary models, under a unified experimental pipeline. The study systematically explores the impact of key LoRA hyperparameters, including rank, scaling factor, and dropout, on downstream performance. We propose an automated evaluation framework based on GPT-4o, which assesses generated test cases across nine quality dimensions. Experimental results demonstrate that LoRA-based fine-tuning significantly improves the performance of all open-source models, with Ministral-8B achieving the best results among them. Furthermore, we show that a fine-tuned 8B open-source model can achieve performance comparable to pre-fine-tuned GPT-4.1 models, highlighting the effectiveness of parameter-efficient adaptation. While GPT-4.1 models achieve the highest overall performance, the performance gap between proprietary and open-source models is substantially reduced after fine-tuning. These findings provide important insights into model selection, fine-tuning strategies, and evaluation methods for automated test generation. In particular, they demonstrate that cost-efficient, locally deployable open-source models can serve as viable alternatives to proprietary systems when combined with well-designed fine-tuning approaches.",
+      "authors": [
+        "Milad Moradi",
+        "Ke Yan",
+        "David Colwell",
+        "Rhona Asgari"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.06946v1",
+      "rrf_rank": 4,
+      "rrf_score": 1.5,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.09101v1",
+      "title": "CLIP-Inspector: Model-Level Backdoor Detection for Prompt-Tuned CLIP via OOD Trigger Inversion",
+      "abstract": "Organisations with limited data and computational resources increasingly outsource model training to Machine Learning as a Service (MLaaS) providers, who adapt vision-language models (VLMs) such as CLIP to downstream tasks via prompt tuning rather than training from scratch. This semi-honest setting creates a security risk where a malicious provider can follow the prompt-tuning protocol yet implant a backdoor, forcing triggered inputs to be classified into an attacker-chosen class, even for out-of-distribution (OOD) data. Such backdoors leave encoders untouched, making them undetectable to existing methods that focus on encoder corruption. Other data-level methods that sanitize data before training or during inference, also fail to answer the critical question, \"Is the delivered model backdoored or not?\" To address this model-level verification problem, we introduce CLIP-Inspector (CI), a backdoor detection method designed for prompt-tuned CLIP models. Assuming white-box access to the delivered model and a pool of unlabeled OOD images, CI reconstructs possible triggers for each class to determine if the model exhibits backdoor behaviour or not. Additionally, we demonstrate that using CI's reconstructed trigger for fine-tuning on correctly labeled triggered inputs enables us to re-align the model and reduce backdoor effectiveness. Through extensive experiments across ten datasets and four backdoor attacks, we demonstrate that CI can reconstruct effective triggers in a single epoch using only 1,000 OOD images, achieving a 94% detection accuracy (47/50 models). Compared to adapted trigger-inversion baselines, CI yields a markedly higher AUROC score (0.973 vs 0.495/0.687), thus enabling the vetting and post-hoc repair of prompt-tuned CLIP models to ensure safe deployment.",
+      "authors": [
+        "Akshit Jindal",
+        "Saket Anand",
+        "Chetan Arora",
+        "Vikram Goyal"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.09101v1",
+      "rrf_rank": 5,
+      "rrf_score": 1.5,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.07960v1",
+      "title": "TOOLCAD: Exploring Tool-Using Large Language Models in Text-to-CAD Generation with Reinforcement Learning",
+      "abstract": "Computer-Aided Design (CAD) is an expert-level task that relies on long-horizon reasoning and coherent modeling actions. Large Language Models (LLMs) have shown remarkable advancements in enabling language agents to tackle real-world tasks. Notably, there has been no investigation into how tool-using LLMs optimally interact with CAD engines, hindering the emergence of LLM-based agentic text-to-CAD modeling systems. We propose ToolCAD, a novel agentic CAD framework deploying LLMs as tool-using agents for text-to-CAD generation. Furthermore, we introduce an interactive CAD modeling gym to rollout reasoning and tool-augmented interaction trajectories with the CAD engine, incorporating hybrid feedback and human supervision. Meanwhile, an end-to-end post-training strategy is presented to enable the LLM agent to elicit refined CAD Modeling Chain of Thought (CAD-CoT) and evolve into proficient CAD tool-using agents via online curriculum reinforcement learning. Our findings demonstrate ToolCAD fills the gap in adopting and training open-source LLMs for CAD tool-using agents, enabling them to perform comparably to proprietary models, paving the way for more accessible and robust autonomous text-to-CAD modeling systems.",
+      "authors": [
+        "Yifei Gong",
+        "Xing Wu",
+        "Wenda Liu",
+        "Kang Tu"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.07960v1",
+      "rrf_rank": 6,
+      "rrf_score": 1.399999976158142,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.07612v1",
+      "title": "Towards Real-Time Human-AI Musical Co-Performance: Accompaniment Generation with Latent Diffusion Models and MAX/MSP",
+      "abstract": "We present a framework for real-time human-AI musical co-performance, in which a latent diffusion model generates instrumental accompaniment in response to a live stream of context audio. The system combines a MAX/MSP front-end-handling real-time audio input, buffering, and playback-with a Python inference server running the generative model, communicating via OSC/UDP messages. This allows musicians to perform in MAX/MSP - a well-established, real-time capable environment - while interacting with a large-scale Python-based generative model, overcoming the fundamental disconnect between real-time music tools and state-of-the-art AI models. We formulate accompaniment generation as a sliding-window look-ahead protocol, training the model to predict future audio from partial context, where system latency is a critical constraint. To reduce latency, we apply consistency distillation to our diffusion model, achieving a 5.4x reduction in sampling time, with both models achieving real-time operation. Evaluated on musical coherence, beat alignment, and audio quality, both models achieve strong performance in the Retrospective regime and degrade gracefully as look-ahead increases. These results demonstrate the feasibility of diffusion-based real-time accompaniment and expose the fundamental trade-off between model latency, look-ahead depth, and generation quality that any such system must navigate.",
+      "authors": [
+        "Tornike Karchkhadze",
+        "Shlomo Dubnov"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.07612v1",
+      "rrf_rank": 7,
+      "rrf_score": 1.3000000715255737,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.01538v1",
+      "title": "Countering Catastrophic Forgetting of Large Language Models for Better Instruction Following via Weight-Space Model Merging",
+      "abstract": "Large language models have been adopted in the medical domain for clinical documentation to reduce clinician burden. However, studies have reported that LLMs often \"forget\" a significant amount of instruction-following ability when fine-tuned using a task-specific medical dataset, a critical challenge in adopting general-purpose LLMs for clinical applications. This study presents a model merging framework to efficiently adapt general-purpose LLMs to the medical domain by countering this forgetting issue. By merging a clinical foundation model (GatorTronLlama) with a general instruct model (Llama-3.1-8B-Instruct) via interpolation-based merge methods, we seek to derive a domain-adapted model with strong performance on clinical tasks while retaining instruction-following ability. Comprehensive evaluation across medical benchmarks and five clinical generation tasks (e.g., radiology and discharge summarization) shows that merged models can effectively mitigate catastrophic forgetting, preserve clinical domain expertise, and retain instruction-following ability. In addition, our model merging strategies demonstrate training efficiency, achieving performance on par with fully fine-tuned baselines under severely constrained supervision (e.g., 64-shot vs. 256-shot). Consequently, weight-space merging constitutes a highly scalable solution for adapting open-source LLMs to clinical applications, facilitating broader deployment in resource-constrained healthcare environments.",
+      "authors": [
+        "Mengxian Lyu",
+        "Cheng Peng",
+        "Ziyi Chen",
+        "Mengyuan Zhang",
+        "Jieting Li Lu",
+        "Yonghui Wu"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.01538v1",
+      "rrf_rank": 8,
+      "rrf_score": 1.3000000715255737,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.07809v1",
+      "title": "PolicyLong: Towards On-Policy Context Extension",
+      "abstract": "Extending LLM context windows is hindered by scarce high-quality long-context data. Recent methods synthesize data with genuine long-range dependencies via information-theoretic verification, selecting contexts that reduce a base model's predictive entropy. However, their single-pass offline construction with a fixed model creates a fundamental off-policy gap: the static screening landscape misaligns with the model's evolving capabilities, causing the training distribution to drift. We propose PolicyLong, shifting data construction towards a dynamic on-policy paradigm. By iteratively re-executing data screening (entropy computation, retrieval, and verification) using the current model, PolicyLong ensures the training distribution tracks evolving capabilities, yielding an emergent self-curriculum. Crucially, both positive and hard negative contexts derive from the current model's entropy landscape, co-evolving what the model learns to exploit and resist. Experiments on RULER, HELMET, and LongBench-v2 (Qwen2.5-3B) show PolicyLong consistently outperforms EntropyLong and NExtLong, with gains growing at longer contexts (e.g., +2.54 at 128K on RULER), confirming the value of on-policy data evolution.",
+      "authors": [
+        "Junlong Jia",
+        "Ziyang Chen",
+        "Xing Wu",
+        "Chaochen Gao",
+        "TingHao Yu",
+        "Feng Zhang",
+        "Songlin Hu"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.07809v1",
+      "rrf_rank": 9,
+      "rrf_score": 1.3000000715255737,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.02002v1",
+      "title": "How and why does deep ensemble coupled with transfer learning increase performance in bipolar disorder and schizophrenia classification?",
+      "abstract": "Transfer learning (TL) and deep ensemble learning (DE) have recently been shown to outperform simple machine learning in classifying psychiatric disorders. However, there is still a lack of understanding as to why that is. This paper aims to understand how and why DE and TL reduce the variability of single-subject classification models in bipolar disorder (BD) and schizophrenia (SCZ). To this end, we investigated the training stability of TL and DE models. For the two classification tasks under consideration, we compared the results of multiple trainings with the same backbone but with different initializations. In this way, we take into account the epistemic uncertainty associated with the uncertainty in the estimation of the model parameters. It has been shown that the performance of classifiers can be significantly improved by using TL with DE. Based on these results, we investigate i) how many models are needed to benefit from the performance improvement of DE when classifying BD and SCZ from healthy controls, and ii) how TL induces better generalization, with and without DE. In the first case, we show that DE reaches a plateau when 10 models are included in the ensemble. In the second case, we find that using a pre-trained model constrains TL models with the same pre-training to stay in the same basin of the loss function. This is not the case for DL models with randomly initialized weights.",
+      "authors": [
+        "Sara Petiton",
+        "Antoine Grigis",
+        "Benoit Dufumier",
+        "Edouard Duchesnay"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.02002v1",
+      "rrf_rank": 10,
+      "rrf_score": 1.3000000715255737,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.01765v1",
+      "title": "DriveDreamer-Policy: A Geometry-Grounded World-Action Model for Unified Generation and Planning",
+      "abstract": "Recently, world-action models (WAM) have emerged to bridge vision-language-action (VLA) models and world models, unifying their reasoning and instruction-following capabilities and spatio-temporal world modeling. However, existing WAM approaches often focus on modeling 2D appearance or latent representations, with limited geometric grounding-an essential element for embodied systems operating in the physical world. We present DriveDreamer-Policy, a unified driving world-action model that integrates depth generation, future video generation, and motion planning within a single modular architecture. The model employs a large language model to process language instructions, multi-view images, and actions, followed by three lightweight generators that produce depth, future video, and actions. By learning a geometry-aware world representation and using it to guide both future prediction and planning within a unified framework, the proposed model produces more coherent imagined futures and more informed driving actions, while maintaining modularity and controllable latency. Experiments on the Navsim v1 and v2 benchmarks demonstrate that DriveDreamer-Policy achieves strong performance on both closed-loop planning and world generation tasks. In particular, our model reaches 89.2 PDMS on Navsim v1 and 88.7 EPDMS on Navsim v2, outperforming existing world-model-based approaches while producing higher-quality future video and depth predictions. Ablation studies further show that explicit depth learning provides complementary benefits to video imagination and improves planning robustness.",
+      "authors": [
+        "Yang Zhou",
+        "Xiaofeng Wang",
+        "Hao Shao",
+        "Letian Wang",
+        "Guosheng Zhao",
+        "Jiangnan Shao",
+        "Jiagang Zhu",
+        "Tingdong Yu",
+        "Zheng Zhu",
+        "Guan Huang",
+        "Steven L. Waslander"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.01765v1",
+      "rrf_rank": 11,
+      "rrf_score": 1.3000000715255737,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.09489v1",
+      "title": "XFED: Non-Collusive Model Poisoning Attack Against Byzantine-Robust Federated Classifiers",
+      "abstract": "Model poisoning attacks pose a significant security threat to Federated Learning (FL). Most existing model poisoning attacks rely on collusion, requiring adversarial clients to coordinate by exchanging local benign models and synchronizing the generation of their poisoned updates. However, sustaining such coordination is increasingly impractical in real-world FL deployments, as it effectively requires botnet-like control over many devices. This approach is costly to maintain and highly vulnerable to detection. This context raises a fundamental question: Can model poisoning attacks remain effective without any communication between attackers? To address this challenge, we introduce and formalize the \\textbf{non-collusive attack model}, in which all compromised clients share a common adversarial objective but operate independently. Under this model, each attacker generates its malicious update without communicating with other adversaries, accessing other clients' updates, or relying on any knowledge of server-side defenses. To demonstrate the feasibility of this threat model, we propose \\textbf{XFED}, the first aggregation-agnostic, non-collusive model poisoning attack. Our empirical evaluation across six benchmark datasets shows that XFED bypasses eight state-of-the-art defenses and outperforms six existing model poisoning attacks. These findings indicate that FL systems are substantially less secure than previously believed and underscore the urgent need for more robust and practical defense mechanisms.",
+      "authors": [
+        "Israt Jahan Mouri",
+        "Muhammad Ridowan",
+        "Muhammad Abdullah Adnan"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.09489v1",
+      "rrf_rank": 12,
+      "rrf_score": 1.2000000476837158,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.07320v1",
+      "title": "Evaluating In-Context Translation with Synchronous Context-Free Grammar Transduction",
+      "abstract": "Low-resource languages pose a challenge for machine translation with large language models (LLMs), which require large amounts of training data. One potential way to circumvent this data dependence is to rely on LLMs' ability to use in-context descriptions of languages, like textbooks and dictionaries. To do so, LLMs must be able to infer the link between the languages' grammatical descriptions and the sentences in question. Here we isolate this skill using a formal analogue of the task: string transduction based on a formal grammar provided in-context. We construct synchronous context-free grammars which define pairs of formal languages designed to model particular aspects of natural language grammar, morphology, and written representation. Using these grammars, we measure how well LLMs can translate sentences from one formal language into another when given both the grammar and the source-language sentence. We vary the size of the grammar, the lengths of the sentences, the syntactic and morphological properties of the languages, and their written script. We note three key findings. First, LLMs' translation accuracy decreases markedly as a function of grammar size and sentence length. Second, differences in morphology and written representation between the source and target languages can strongly diminish model performance. Third, we examine the types of errors committed by models and find they are most prone to recall the wrong words from the target language vocabulary, hallucinate new words, or leave source-language words untranslated.",
+      "authors": [
+        "Jackson Petty",
+        "Jaulie Goe",
+        "Tal Linzen"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.07320v1",
+      "rrf_rank": 13,
+      "rrf_score": 1.2000000476837158,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.07121v1",
+      "title": "Mixed-Initiative Context: Structuring and Managing Context for Human-AI Collaboration",
+      "abstract": "In the human-AI collaboration area, the context formed naturally through multi-turn interactions is typically flattened into a chronological sequence and treated as a fixed whole in subsequent reasoning, with no mechanism for dynamic organization and management along the collaboration workflow. Yet these contexts differ substantially in lifecycle, structural hierarchy, and relevance. For instance, temporary or abandoned exchanges and parallel topic threads persist in the limited context window, causing interference and even conflict. Meanwhile, users are largely limited to influencing context indirectly through input modifications (e.g., corrections, references, or ignoring), leaving their control neither explicit nor verifiable.   To address this, we propose Mixed-Initiative Context, which reconceptualizes the context formed across multi-turn interactions as an explicit, structured, and manipulable interactive object. Under this concept, the structure, scope, and content of context can be dynamically organized and adjusted according to task needs, enabling both humans and AI to actively participate in context construction and regulation. To explore this concept, we implement Contextify as a probe system and conduct a user study examining users' context management behaviors, attitudes toward AI initiative, and overall collaboration experience. We conclude by discussing the implications of this concept for the HCI community.",
+      "authors": [
+        "Haichang Li",
+        "Qinshi Zhang",
+        "Piaohong Wang",
+        "Zhicong Lu"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.07121v1",
+      "rrf_rank": 14,
+      "rrf_score": 1.2000000476837158,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.01610v1",
+      "title": "GraphWalk: Enabling Reasoning in Large Language Models through Tool-Based Graph Navigation",
+      "abstract": "The use of knowledge graphs for grounding agents in real-world Q&A applications has become increasingly common. Answering complex queries often requires multi-hop reasoning and the ability to navigate vast relational structures. Standard approaches rely on prompting techniques that steer large language models to reason over raw graph context, or retrieval-augmented generation pipelines where relevant subgraphs are injected into the context. These, however, face severe limitations with enterprise-scale KGs that cannot fit in even the largest context windows available today. We present GraphWalk, a problem-agnostic, training-free, tool-based framework that allows off-the-shelf LLMs to reason through sequential graph navigation, dramatically increasing performance across different tasks. Unlike task-specific agent frameworks that encode domain knowledge into specialized tools, GraphWalk equips the LLM with a minimal set of orthogonal graph operations sufficient to traverse any graph structure. We evaluate whether models equipped with GraphWalk can compose these operations into correct multi-step reasoning chains, where each tool call represents a verifiable step creating a transparent execution trace. We first demonstrate our approach on maze traversal, a problem non-reasoning models are completely unable to solve, then present results on graphs resembling real-world enterprise knowledge graphs. To isolate structural reasoning from world knowledge, we evaluate on entirely synthetic graphs with random, non-semantic labels. Our benchmark spans 12 query templates from basic retrieval to compound first-order logic queries. Results show that tool-based traversal yields substantial and consistent gains over in-context baselines across all model families tested, with gains becoming more pronounced as scale increases, precisely where in-context approaches fail catastrophically.",
+      "authors": [
+        "Taraneh Ghandi",
+        "Hamidreza Mahyar",
+        "Shachar Klaiman"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.01610v1",
+      "rrf_rank": 15,
+      "rrf_score": 1.2000000476837158,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.07911v1",
+      "title": "Dynamic Attentional Context Scoping: Agent-Triggered Focus Sessions for Isolated Per-Agent Steering in Multi-Agent LLM Orchestration",
+      "abstract": "Multi-agent LLM orchestration systems suffer from context pollution: when N concurrent agents compete for the orchestrator's context window, each agent's task state, partial outputs, and pending questions contaminate the steering interactions of every other agent, degrading decision quality. We introduce Dynamic Attentional Context Scoping (DACS), a mechanism in which the orchestrator operates in two asymmetric modes. In Registry mode it holds only lightweight per-agent status summaries (<=200 tokens each), remaining responsive to all agents and the user. When an agent emits a SteeringRequest, the orchestrator enters Focus(a_i) mode, injecting the full context of agent a_i while compressing all other agents to their registry entries. Context isolation is agent-triggered, asymmetric, and deterministic: the context window contains exactly F(a_i) + R_{-i} during steering, eliminating cross-agent contamination without requiring context compression or retrieval. We evaluate DACS across four experimental phases totalling 200 trials: Phase 1 tests N in {3,5,10} (60 trials); Phase 2 tests agent heterogeneity and adversarial dependencies (60 trials); Phase 3 tests decision density up to D=15 (40 trials); Phase 4 uses autonomous LLM agents for free-form questions (40 trials, Claude Haiku 4.5). Across all 8 synthetic scenarios, DACS achieves 90.0--98.4% steering accuracy versus 21.0--60.0% for a flat-context baseline (p < 0.0001 throughout), with wrong-agent contamination falling from 28--57% to 0--14% and context efficiency ratios of up to 3.53x. The accuracy advantage grows with N and D; keyword matching is validated by LLM-as-judge across all phases (mean kappa=0.909). DACS outperforms the flat-context baseline by +17.2pp at N=3 (p=0.0023) and +20.4pp at N=5 (p=0.0008) in Phase 4, with the advantage growing with N confirmed by two independent judges.",
+      "authors": [
+        "Nickson Patel"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.07911v1",
+      "rrf_rank": 16,
+      "rrf_score": 1.2000000476837158,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.09338v1",
+      "title": "Mind the Gap Between Spatial Reasoning and Acting! Step-by-Step Evaluation of Agents With Spatial-Gym",
+      "abstract": "Spatial reasoning is central to navigation and robotics, yet measuring model capabilities on these tasks remains difficult. Existing benchmarks evaluate models in a one-shot setting, requiring full solution generation in a single response, unlike humans, who work in interactive environments step-by-step. We introduce Spatial-Gym, a Gymnasium environment that isolates spatial constraint reasoning by testing pathfinding in 2D-grid puzzles as a sequential decision task with optional backtracking. We evaluate eight models in three settings (one-shot, step-by-step, step-by-step with backtracking) against human, random, and A* baselines on 500 episodes. The best model, GPT-OSS 120B, achieves a solve rate of 16.0%, 82 points below the human baseline (98.0%). Step-by-step format helps weaker models (up to +5.4%) by removing formatting errors, but hurts stronger models (up to 5.6%) by constraining global planning. Backtracking improves episode completion, but increases solve rate only for weaker models; stronger models rarely backtrack and do not benefit from it. Our experiments have three key findings: (1) models fail to scale reasoning effort with difficulty, (2) vision models receiving images of the spatial environment reduce solve rate by 73%, and (3) extended chain-of-thought reasoning retains a 3-5x accuracy advantage over standard inference even in the step-by-step setting. Spatial-Gym enables diagnosis of model limitations and provides a framework for improving spatial reasoning through reinforcement learning.",
+      "authors": [
+        "Lars Benedikt Kaesberg",
+        "Tianyu Yang",
+        "Niklas Bauer",
+        "Terry Ruas",
+        "Jan Philip Wahle",
+        "Bela Gipp"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.09338v1",
+      "rrf_rank": 17,
+      "rrf_score": 1.100000023841858,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.01965v1",
+      "title": "Do We Need Bigger Models for Science? Task-Aware Retrieval with Small Language Models",
+      "abstract": "Scientific knowledge discovery increasingly relies on large language models, yet many existing scholarly assistants depend on proprietary systems with tens or hundreds of billions of parameters. Such reliance limits reproducibility and accessibility for the research community. In this work, we ask a simple question: do we need bigger models for scientific applications? Specifically, we investigate to what extent carefully designed retrieval pipelines can compensate for reduced model scale in scientific applications. We design a lightweight retrieval-augmented framework that performs task-aware routing to select specialized retrieval strategies based on the input query. The system further integrates evidence from full-text scientific papers and structured scholarly metadata, and employs compact instruction-tuned language models to generate responses with citations. We evaluate the framework across several scholarly tasks, focusing on scholarly question answering (QA), including single- and multi-document scenarios, as well as biomedical QA under domain shift and scientific text compression. Our findings demonstrate that retrieval and model scale are complementary rather than interchangeable. While retrieval design can partially compensate for smaller models, model capacity remains important for complex reasoning tasks. This work highlights retrieval and task-aware design as key factors for building practical and reproducible scholarly assistants.",
+      "authors": [
+        "Florian Kelber",
+        "Matthias Jobst",
+        "Yuni Susanti",
+        "Michael Färber"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.01965v1",
+      "rrf_rank": 18,
+      "rrf_score": 1.100000023841858,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.04088v1",
+      "title": "Embedding Enhancement via Fine-Tuned Language Models for Learner-Item Cognitive Modeling",
+      "abstract": "Learner-item cognitive modeling plays a central role in the web-based online intelligent education system by enabling cognitive diagnosis (CD) across diverse online educational scenarios. Although ID embedding remains the mainstream approach in cognitive modeling due to its effectiveness and flexibility, recent advances in language models (LMs) have introduced new possibilities for incorporating rich semantic representations to enhance CD performance. This highlights the need for a comprehensive analysis of how LMs enhance embeddings through semantic integration across mainstream CD tasks. This paper identifies two key challenges in fully leveraging LMs in existing work: Misalignment between the training objectives of LMs and CD models creates a distribution gap in feature spaces; A unified framework is essential for integrating textual embeddings across varied CD tasks while preserving the strengths of existing cognitive modeling paradigms to ensure the robustness of embedding enhancement. To address these challenges, this paper introduces EduEmbed, a unified embedding enhancement framework that leverages fine-tuned LMs to enrich learner-item cognitive modeling across diverse CD tasks. EduEmbed operates in two stages. In the first stage, we fine-tune LMs based on role-specific representations and an interaction diagnoser to bridge the semantic gap of CD models. In the second stage, we employ a textual adapter to extract task-relevant semantics and integrate them with existing modeling paradigms to improve generalization. We evaluate the proposed framework on four CD tasks and computerized adaptive testing (CAT) task, achieving robust performance. Further analysis reveals the impact of semantic information across diverse tasks, offering key insights for future research on the application of LMs in CD for online intelligent education systems.",
+      "authors": [
+        "Yuanhao Liu",
+        "Zihan Zhou",
+        "Kaiying Wu",
+        "Shuo Liu",
+        "Yiyang Huang",
+        "Jiajun Guo",
+        "Aimin Zhou",
+        "Hong Qian"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.04088v1",
+      "rrf_rank": 19,
+      "rrf_score": 1.100000023841858,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.07725v1",
+      "title": "Squeeze Evolve: Unified Multi-Model Orchestration for Verifier-Free Evolution",
+      "abstract": "We show that verifier-free evolution is bottlenecked by both diversity and efficiency: without external correction, repeated evolution accelerates collapse toward narrow modes, while the uniform use of a high-cost model wastes compute and quickly becomes economically impractical. We introduce Squeeze Evolve, a unified multi-model orchestration framework for verifier-free evolutionary inference. Our approach is guided by a simple principle: allocate model capability where it has the highest marginal utility. Stronger models are reserved for high-impact stages, while cheaper models handle the other stages at much lower costs. This principle addresses diversity and cost-efficiency jointly while remaining lightweight. Squeeze Evolve naturally supports open-source, closed-source, and mixed-model deployments. Across AIME 2025, HMMT 2025, LiveCodeBench V6, GPQA-Diamond, ARC-AGI-V2, and multimodal vision benchmarks, such as MMMU-Pro and BabyVision, Squeeze Evolve consistently improves the cost-capability frontier over single-model evolution and achieves new state-of-the-art results on several tasks. Empirically, Squeeze Evolve reduces API cost by up to $\\sim$3$\\times$ and increases fixed-budget serving throughput by up to $\\sim$10$\\times$. Moreover, on discovery tasks, Squeeze Evolve is the first verifier-free evolutionary method to match, and in some cases exceed, the performance of verifier-based evolutionary methods.",
+      "authors": [
+        "Monishwaran Maheswaran",
+        "Leon Lakhani",
+        "Zhongzhu Zhou",
+        "Shijia Yang",
+        "Junxiong Wang",
+        "Coleman Hooper",
+        "Yuezhou Hu",
+        "Rishabh Tiwari",
+        "Jue Wang",
+        "Harman Singh",
+        "Qingyang Wu",
+        "Yuqing Jian",
+        "Ce Zhang",
+        "Kurt Keutzer",
+        "Tri Dao",
+        "Xiaoxia Wu",
+        "Ben Athiwaratkun",
+        "James Zou",
+        "Chenfeng Xu"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.07725v1",
+      "rrf_rank": 20,
+      "rrf_score": 1.100000023841858,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.02145v1",
+      "title": "MTI: A Behavior-Based Temperament Profiling System for AI Agents",
+      "abstract": "AI models of equivalent capability can exhibit fundamentally different behavioral patterns, yet no standardized instrument exists to measure these dispositional differences. Existing approaches either borrow human personality dimensions and rely on self-report (which diverges from actual behavior in LLMs) or treat behavioral variation as a defect rather than a trait.   We introduce the Model Temperament Index (MTI), a behavior-based profiling system that measures AI agent temperament across four axes: Reactivity (environmental sensitivity), Compliance (instruction-behavior alignment), Sociality (relational resource allocation), and Resilience (stress resistance). Grounded in the Four Shell Model from Model Medicine, MTI measures what agents do, not what they say about themselves, using structured examination protocols with a two-stage design that separates capability from disposition.   We profile 10 small language models (1.7B-9B parameters, 6 organizations, 3 training paradigms) and report five principal findings: (1) the four axes are largely independent among instruction-tuned models (all |r| < 0.42); (2) within-axis facet dissociations are empirically confirmed -- Compliance decomposes into fully independent formal and stance facets (r = 0.002), while Resilience decomposes into inversely related cognitive and adversarial facets; (3) a Compliance-Resilience paradox reveals that opinion-yielding and fact-vulnerability operate through independent channels; (4) RLHF reshapes temperament not only by shifting axis scores but by creating within-axis facet differentiation absent in the unaligned base model; and (5) temperament is independent of model size (1.7B-9B), confirming that MTI measures disposition rather than capability.",
+      "authors": [
+        "Jihoon Jeong"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.02145v1",
+      "rrf_rank": 21,
+      "rrf_score": 1.0,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.01594v1",
+      "title": "Do Large Language Models Mentalize When They Teach?",
+      "abstract": "How do LLMs decide what to teach next: by reasoning about a learner's knowledge, or by using simpler rules of thumb? We test this in a controlled task previously used to study human teaching strategies. On each trial, a teacher LLM sees a hypothetical learner's trajectory through a reward-annotated directed graph and must reveal a single edge so the learner would choose a better path if they replanned. We run a range of LLMs as simulated teachers and fit their trial-by-trial choices with the same cognitive models used for humans: a Bayes-Optimal teacher that infers which transitions the learner is missing (inverse planning), weaker Bayesian variants, heuristic baselines (e.g., reward based), and non-mentalizing utility models. In a baseline experiment matched to the stimuli presented to human subjects, most LLMs perform well, show little change in strategy over trials, and their graph-by-graph performance is similar to that of humans. Model comparison (BIC) shows that Bayes-Optimal teaching best explains most models' choices. When given a scaffolding intervention, models follow auxiliary inference- or reward-focused prompts, but these scaffolds do not reliably improve later teaching on heuristic-incongruent test graphs and can sometimes reduce performance. Overall, cognitive model fits provide insight into LLM tutoring policies and show that prompt compliance does not guarantee better teaching decisions.",
+      "authors": [
+        "Sevan K. Harootonian",
+        "Mark K. Ho",
+        "Thomas L. Griffiths",
+        "Yael Niv",
+        "Ilia Sucholutsky"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.01594v1",
+      "rrf_rank": 22,
+      "rrf_score": 1.0,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.04456v1",
+      "title": "Empirical Characterization of Rationale Stability Under Controlled Perturbations for Explainable Pattern Recognition",
+      "abstract": "Reliable pattern recognition systems should exhibit consistent behavior across similar inputs, and their explanations should remain stable. However, most Explainable AI evaluations remain instance centric and do not explicitly quantify whether attribution patterns are consistent across samples that share the same class or represent small variations of the same input. In this work, we propose a novel metric aimed at assessing the consistency of model explanations, ensuring that models consistently reflect the intended objectives and consistency under label-preserving perturbations. We implement this metric using a pre-trained BERT model on the SST-2 sentiment analysis dataset, with additional robustness tests on RoBERTa, DistilBERT, and IMDB, applying SHAP to compute feature importance for various test samples. The proposed metric quantifies the cosine similarity of SHAP values for inputs with the same label, aiming to detect inconsistent behaviors, such as biased reliance on certain features or failure to maintain consistent reasoning for similar predictions. Through a series of experiments, we evaluate the ability of this metric to identify misaligned predictions and inconsistencies in model explanations. These experiments are compared against standard fidelity metrics to assess whether the new metric can effectively identify when a model's behavior deviates from its intended objectives. The proposed framework provides a deeper understanding of model behavior by enabling more robust verification of rationale stability, which is critical for building trustworthy AI systems. By quantifying whether models rely on consistent attribution patterns for similar inputs, the proposed approach supports more robust evaluation of model behavior in practical pattern recognition pipelines. Our code is publicly available at https://github.com/anmspro/ESS-XAI-Stability.",
+      "authors": [
+        "Abu Noman Md Sakib",
+        "Zhensen Wang",
+        "Merjulah Roby",
+        "Zijie Zhang"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.04456v1",
+      "rrf_rank": 23,
+      "rrf_score": 1.0,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.09378v1",
+      "title": "BadSkill: Backdoor Attacks on Agent Skills via Model-in-Skill Poisoning",
+      "abstract": "Agent ecosystems increasingly rely on installable skills to extend functionality, and some skills bundle learned model artifacts as part of their execution logic. This creates a supply-chain risk that is not captured by prompt injection or ordinary plugin misuse: a third-party skill may appear benign while concealing malicious behavior inside its bundled model. We present BadSkill, a backdoor attack formulation that targets this model-in-skill threat surface. In BadSkill, an adversary publishes a seemingly benign skill whose embedded model is backdoor-fine-tuned to activate a hidden payload only when routine skill parameters satisfy attacker-chosen semantic trigger combinations. To realize this attack, we train the embedded classifier with a composite objective that combines classification loss, margin-based separation, and poison-focused optimization, and evaluate it in an OpenClaw-inspired simulation environment that preserves third-party skill installation and execution while enabling controlled multi-model study. Our benchmark spans 13 skills, including 8 triggered tasks and 5 non-trigger control skills, with a combined main evaluation set of 571 negative-class queries and 396 trigger-aligned queries. Across eight architectures (494M--7.1B parameters) from five model families, BadSkill achieves up to 99.5\\% average attack success rate (ASR) across the eight triggered skills while maintaining strong benign-side accuracy on negative-class queries. In poison-rate sweeps on the standard test split, a 3\\% poison rate already yields 91.7\\% ASR. The attack remains effective across the evaluated model scales and under five text perturbation types. These findings identify model-bearing skills as a distinct model supply-chain risk in agent ecosystems and motivate stronger provenance verification and behavioral vetting for third-party skill artifacts.",
+      "authors": [
+        "Guiyao Tie",
+        "Jiawen Shi",
+        "Pan Zhou",
+        "Lichao Sun"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.09378v1",
+      "rrf_rank": 24,
+      "rrf_score": 1.0,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.01664v1",
+      "title": "ContextBudget: Budget-Aware Context Management for Long-Horizon Search Agents",
+      "abstract": "LLM-based agents show strong potential for long-horizon reasoning, yet their context size is limited by deployment factors (e.g., memory, latency, and cost), yielding a constrained context budget. As interaction histories grow, this induces a trade-off between retaining past information and staying within the context limit. To address this challenge, we propose Budget-Aware Context Management (BACM), which formulates context management as a sequential decision problem with a context budget constraint. It enables agents to assess the available budget before incorporating new observations and decide when and how much of the interaction history to compress. We further develop BACM-RL, an end-to-end curriculum-based reinforcement learning approach that learns compression strategies under varying context budgets. Experiments on compositional multi-objective QA and long-horizon web browsing benchmarks show that BACM-RL consistently outperforms prior methods across model scales and task complexities, achieving over $1.6\\times$ gains over strong baselines in high-complexity settings, while maintaining strong advantages as budgets shrink, where most methods exhibit a downward performance trend.",
+      "authors": [
+        "Yong Wu",
+        "YanZhao Zheng",
+        "TianZe Xu",
+        "ZhenTao Zhang",
+        "YuanQiang Yu",
+        "JiHuai Zhu",
+        "Chao Ma",
+        "BinBin Lin",
+        "BaoHua Dong",
+        "HangCheng Zhu",
+        "RuoHui Huang",
+        "Gang Yu"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.01664v1",
+      "rrf_rank": 25,
+      "rrf_score": 1.0,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.06296v1",
+      "title": "AgentOpt v0.1 Technical Report: Client-Side Optimization for LLM-Based Agent",
+      "abstract": "AI agents are increasingly deployed in real-world applications, including systems such as Manus, OpenClaw, and coding agents. Existing research has primarily focused on \\emph{server-side} efficiency, proposing methods such as caching, speculative execution, traffic scheduling, and load balancing to reduce the cost of serving agentic workloads. However, as users increasingly construct agents by composing local tools, remote APIs, and diverse models, an equally important optimization problem arises on the client side. Client-side optimization asks how developers should allocate the resources available to them, including model choice, local tools, and API budget across pipeline stages, subject to application-specific quality, cost, and latency constraints. Because these objectives depend on the task and deployment setting, they cannot be determined by server-side systems alone. We introduce AgentOpt, the first framework-agnostic Python package for client-side agent optimization. We first study model selection, a high-impact optimization lever in multi-step agent pipelines. Given a pipeline and a small evaluation set, the goal is to find the most cost-effective assignment of models to pipeline roles. This problem is consequential in practice: at matched accuracy, the cost gap between the best and worst model combinations can reach 13--32$\\times$ in our experiments. To efficiently explore the exponentially growing combination space, AgentOpt implements eight search algorithms, including Arm Elimination, Epsilon-LUCB, Threshold Successive Elimination, and Bayesian Optimization. Across four benchmarks, Arm Elimination recovers near-optimal accuracy while reducing evaluation budget by 24--67\\% relative to brute-force search on three of four tasks. Code and benchmark results available at https://agentoptimizer.github.io/agentopt/.",
+      "authors": [
+        "Wenyue Hua",
+        "Sripad Karne",
+        "Qian Xie",
+        "Armaan Agrawal",
+        "Nikos Pagonas",
+        "Kostis Kaffes",
+        "Tianyi Peng"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.06296v1",
+      "rrf_rank": 26,
+      "rrf_score": 1.0,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.07147v1",
+      "title": "Dynamic Context Evolution for Scalable Synthetic Data Generation",
+      "abstract": "Large language models produce repetitive output when prompted independently across many batches, a phenomenon we term cross-batch mode collapse: the progressive loss of output diversity when a language model is prompted repeatedly without access to its prior generations. Practitioners have long mitigated this with ad hoc deduplication and seed rotation, but no principled framework exists. We introduce Dynamic Context Evolution (DCE), comprising three mechanisms: (1) verbalized tail sampling (the model labels each idea with a guess about how obvious it is, and obvious ideas are discarded), which filters high-probability candidates via model self-assessment; (2) semantic memory, which maintains a persistent embedding index to reject near-duplicates across batches; and (3) adaptive prompt evolution, which reconstructs the generation prompt each batch using memory state and rotating diversity strategies. In experiments across three domains (sustainable packaging concepts, educational exam questions, and creative writing prompts) and two model families (gpt-5-mini and claude-haiku-4-5), a component ablation across 2-3 random seeds per method shows that DCE achieves 0.0 +/- 0.0% collapse versus 5.6 +/- 2.0% for naive prompting, while producing 17-18 HDBSCAN clusters per seed versus naive's volatile 2-17, indicating reliably richer conceptual structure. These results are validated with an independent embedding model (all-MiniLM-L6-v2) and hold across sensitivity sweeps of the VTS threshold tau and dedup threshold delta. Deduplication and prompt evolution are individually insufficient but jointly effective, at approximately $0.50 per 1,000 candidates using only standard API calls, with no fine-tuning or custom architectures required.",
+      "authors": [
+        "Ryan Lingo",
+        "Rajeev Chhajer"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.07147v1",
+      "rrf_rank": 27,
+      "rrf_score": 1.0,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.04852v1",
+      "title": "Strengthening Human-Centric Chain-of-Thought Reasoning Integrity in LLMs via a Structured Prompt Framework",
+      "abstract": "Chain-of-Thought (CoT) prompting has been used to enhance the reasoning capability of LLMs. However, its reliability in security-sensitive analytical tasks remains insufficiently examined, particularly under structured human evaluation. Alternative approaches, such as model scaling and fine-tuning can be used to help improve performance. These methods are also often costly, computationally intensive, or difficult to audit. In contrast, prompt engineering provides a lightweight, transparent, and controllable mechanism for guiding LLM reasoning. This study proposes a structured prompt engineering framework designed to strengthen CoT reasoning integrity while improving security threat and attack detection reliability in local LLM deployments. The framework includes 16 factors grouped into four core dimensions: (1) Context and Scope Control, (2) Evidence Grounding and Traceability, (3) Reasoning Structure and Cognitive Control, and (4) Security-Specific Analytical Constraints. Rather than optimizing the wording of the prompt heuristically, the framework introduces explicit reasoning controls to mitigate hallucination and prevent reasoning drift, as well as strengthening interpretability in security-sensitive contexts. Using DDoS attack detection in SDN traffic as a case study, multiple model families were evaluated under structured and unstructured prompting conditions. Pareto frontier analysis and ablation experiments demonstrate consistent reasoning improvements (up to 40% in smaller models) and stable accuracy gains across scales. Human evaluation with strong inter-rater agreement (Cohen's k > 0.80) confirms robustness. The results establish structured prompting as an effective and practical approach for reliable and explainable AI-driven cybersecurity analysis.",
+      "authors": [
+        "Jiling Zhou",
+        "Aisvarya Adeseye",
+        "Seppo Virtanen",
+        "Antti Hakkala",
+        "Jouni Isoaho"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.04852v1",
+      "rrf_rank": 28,
+      "rrf_score": 1.0,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.04064v1",
+      "title": "Extracting and Steering Emotion Representations in Small Language Models: A Methodological Comparison",
+      "abstract": "Small language models (SLMs) in the 100M-10B parameter range increasingly power production systems, yet whether they possess the internal emotion representations recently discovered in frontier models remains unknown. We present the first comparative analysis of emotion vector extraction methods for SLMs, evaluating 9 models across 5 architectural families (GPT-2, Gemma, Qwen, Llama, Mistral) using 20 emotions and two extraction methods (generation-based and comprehension-based). Generation-based extraction produces statistically superior emotion separation (Mann-Whitney p = 0.007; Cohen's d = -107.5), with the advantage modulated by instruction tuning and architecture. Emotion representations localize at middle transformer layers (~50% depth), following a U-shaped curve that is architecture-invariant from 124M to 3B parameters. We validate these findings against representational anisotropy baselines across 4 models and confirm causal behavioral effects through steering experiments, independently verified by an external emotion classifier (92% success rate, 37/40 scenarios). Steering reveals three regimes -- surgical (coherent text transformation), repetitive collapse, and explosive (text degradation) -- quantified by perplexity ratios and separated by model architecture rather than scale. We document cross-lingual emotion entanglement in Qwen, where steering activates semantically aligned Chinese tokens that RLHF does not suppress, raising safety concerns for multilingual deployment. This work provides methodological guidelines for emotion research on open-weight models and contributes to the Model Medicine series by bridging external behavioral profiling with internal representational analysis.",
+      "authors": [
+        "Jihoon Jeong"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.04064v1",
+      "rrf_rank": 29,
+      "rrf_score": 1.0,
+      "has_extracted_markdown": false
+    },
+    {
+      "paper_id": "2604.04133v1",
+      "title": "Learning Robust Visual Features in Computed Tomography Enables Efficient Transfer Learning for Clinical Tasks",
+      "abstract": "There is substantial interest in developing artificial intelligence systems to support radiologists across tasks ranging from segmentation to report generation. Existing computed tomography (CT) foundation models have largely focused on building generalist vision-language systems capable of tasks such as question answering and report generation. However, training reliable vision-language systems requires paired image-text data at a scale that remains unavailable in CT. Moreover, adapting the underlying visual representations to downstream tasks typically requires partial or full backbone fine-tuning, a computationally demanding process inaccessible to many research groups. Instead, foundation models should prioritise learning robust visual representations that enable efficient transfer to new tasks with minimal labelled data and without backbone fine-tuning. We present VoxelFM, a 3D CT foundation model trained with self-distillation using the DINO framework, which learns semantically rich features without language supervision. We evaluated VoxelFM across seven categories of clinically relevant downstream tasks using frozen backbone representations with lightweight probes: classification, regression, survival analysis, instance retrieval, localisation, segmentation, and report generation. VoxelFM matched or outperformed four existing CT foundation models across all task categories. Despite receiving no language supervision during pre-training, VoxelFM surpassed models explicitly trained with language-alignment objectives, including on report generation. Our results indicate that current CT foundation models perform significantly better as feature extractors for lightweight probes rather than as vision encoders for vision-language models. Model weights and training code are publicly available.",
+      "authors": [
+        "Rubén Moreno-Aguado",
+        "Alba Magallón",
+        "Victor Moreno",
+        "Yingying Fang",
+        "Guang Yang"
+      ],
+      "pdf_url": "https://arxiv.org/pdf/2604.04133v1",
+      "rrf_rank": 30,
+      "rrf_score": 1.0,
+      "has_extracted_markdown": false
+    }
+  ]
+}
