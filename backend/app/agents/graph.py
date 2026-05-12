@@ -13,7 +13,7 @@ from app.core.config import settings
 
 
 def node_evaluator(state: AgentState):
-    """Pointwise evaluator: abstract + distilled_criteria → decision + score."""
+    """Pointwise evaluator: abstract + distilled_criteria → decision + score + user_explanation."""
     llm = ChatOpenAI(
         model="gpt-4o-mini",
         temperature=0.0,
@@ -32,7 +32,10 @@ def node_evaluator(state: AgentState):
             "When uncertain, PREFER 'borderline' over 'reject'.\n"
             "- Output 'reject' ONLY if the paper clearly does not match.\n"
             "- Assign a relevance score from 1.0 to 10.0.\n"
-            "- Write a brief reasoning trace in reasonbook (internal use only)."
+            "- Write a brief reasoning trace in reasonbook (internal use only).\n"
+            "- Also write a 2-3 sentence user_explanation in the user's voice: what the paper "
+            "is about and how it connects to what they want to follow. Do NOT mention scores, "
+            "criteria IDs, or the words 'accept'/'reject'."
         )),
         ("human", "Abstract:\n\n{abstract}")
     ])
@@ -47,6 +50,7 @@ def node_evaluator(state: AgentState):
         "evaluator_decision": result.decision,
         "evaluator_score": result.score,
         "evaluator_reasonbook": result.reasonbook,
+        "evaluator_user_explanation": result.user_explanation,
     }
 
 

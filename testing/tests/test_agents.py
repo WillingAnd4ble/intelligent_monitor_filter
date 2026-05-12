@@ -110,7 +110,7 @@ class TestEvaluatorNode:
     def test_accept_decision(self, make_agent_state):
         from app.agents.schemas import EvaluatorOutput
 
-        fake = EvaluatorOutput(decision="accept", reasonbook="Matches multi-agent LLM criteria.")
+        fake = EvaluatorOutput(decision="accept", score=8.0, reasonbook="Matches multi-agent LLM criteria.", user_explanation="Stub explanation for tests.")
         patcher, _ = _patch_llm_chain("app.agents.graph.ChatOpenAI", fake)
 
         with patcher:
@@ -122,7 +122,7 @@ class TestEvaluatorNode:
     def test_reject_decision(self, make_agent_state):
         from app.agents.schemas import EvaluatorOutput
 
-        fake = EvaluatorOutput(decision="reject", reasonbook="About agriculture.")
+        fake = EvaluatorOutput(decision="reject", score=1.5, reasonbook="About agriculture.", user_explanation="Stub explanation for tests.")
         patcher, _ = _patch_llm_chain("app.agents.graph.ChatOpenAI", fake)
 
         with patcher:
@@ -134,7 +134,7 @@ class TestEvaluatorNode:
     def test_borderline_decision(self, make_agent_state):
         from app.agents.schemas import EvaluatorOutput
 
-        fake = EvaluatorOutput(decision="borderline", reasonbook="Mentions agents but mostly RL.")
+        fake = EvaluatorOutput(decision="borderline", score=5.0, reasonbook="Mentions agents but mostly RL.", user_explanation="Stub explanation for tests.")
         patcher, _ = _patch_llm_chain("app.agents.graph.ChatOpenAI", fake)
 
         with patcher:
@@ -143,10 +143,30 @@ class TestEvaluatorNode:
 
         assert result["evaluator_decision"] == "borderline"
 
+    def test_evaluator_returns_user_explanation(self, make_agent_state):
+        from app.agents.schemas import EvaluatorOutput
+
+        fake_output = EvaluatorOutput(
+            decision="accept",
+            score=8.5,
+            reasonbook="Internal: paper covers multi-agent coordination per criterion 1.",
+            user_explanation="This paper proposes a multi-agent coordination framework, "
+                             "matching your interest in LLM-based agentic systems.",
+        )
+        patcher, _ = _patch_llm_chain("app.agents.graph.ChatOpenAI", fake_output)
+
+        with patcher:
+            from app.agents.graph import node_evaluator
+            state = make_agent_state()
+            result = node_evaluator(state)
+
+        assert "evaluator_user_explanation" in result
+        assert "multi-agent coordination framework" in result["evaluator_user_explanation"]
+
     def test_evaluator_uses_criteria_in_prompt(self, make_agent_state):
         from app.agents.schemas import EvaluatorOutput
 
-        fake = EvaluatorOutput(decision="accept", reasonbook="ok")
+        fake = EvaluatorOutput(decision="accept", score=8.0, reasonbook="ok", user_explanation="Stub explanation for tests.")
         patcher, mock_chain = _patch_llm_chain("app.agents.graph.ChatOpenAI", fake)
 
         custom_criteria = ["Must mention transformers", "Must have code"]
