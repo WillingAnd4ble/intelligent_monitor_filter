@@ -242,3 +242,34 @@ class TestIngestPapers:
         added_paper = mock_session.add.call_args[0][0]
         assert added_paper.id == "2404.NEW01"
         assert added_paper.embedding == fake_embedding
+
+
+# ---------------------------------------------------------------------------
+# Windowed fetch — assert the helper's since/until are encoded into the query
+# ---------------------------------------------------------------------------
+
+class TestFetchArxivPapersWithWindow:
+    """Regression guards for the windowed-fetch mode used by the cascade pipeline."""
+
+    @patch("app.worker.arxiv_scraper._fetch_and_parse", return_value=[])
+    @patch("app.worker.arxiv_scraper._throttle_arxiv")
+    def test_passes_since_until_into_query(self, throttle, mock_fetch):
+        from app.worker.arxiv_scraper import fetch_arxiv_papers
+        since = datetime(2026, 5, 12, 0, 0, 0, tzinfo=timezone.utc)
+        until = datetime(2026, 5, 12, 23, 59, 59, tzinfo=timezone.utc)
+        fetch_arxiv_papers("cat:cs.AI", since=since, until=until)
+
+        # The first URL passed in must contain the windowed query
+        url = mock_fetch.call_args_list[0][0][0]
+        assert "submittedDate:" in url
+        assert "202605120000" in url
+        assert "202605122359" in url
+
+    @patch("app.worker.arxiv_scraper._fetch_and_parse", return_value=[])
+    @patch("app.worker.arxiv_scraper._throttle_arxiv")
+    def test_legacy_mode_no_since_until_uses_max_results(self, throttle, mock_fetch):
+        from app.worker.arxiv_scraper import fetch_arxiv_papers
+        fetch_arxiv_papers("cat:cs.AI", max_results=42)
+        url = mock_fetch.call_args_list[0][0][0]
+        assert "max_results=42" in url
+        assert "submittedDate:" not in url
