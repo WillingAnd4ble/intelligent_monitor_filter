@@ -177,3 +177,80 @@ def make_mock_structured_output(return_value):
     mock_llm.with_structured_output.return_value = mock_structured
 
     return mock_llm, mock_chain_result
+
+
+# ===== NEW FIXTURES FOR PIPELINE/AUTH TESTS =================================
+
+@pytest.fixture
+def eager_celery():
+    """Run Celery tasks in-process so `.delay()` / `.apply_async()` execute immediately."""
+    from app.worker.celery_app import celery_app
+    celery_app.conf.task_always_eager = True
+    celery_app.conf.task_eager_propagates = True
+    yield celery_app
+    celery_app.conf.task_always_eager = False
+    celery_app.conf.task_eager_propagates = False
+
+
+@pytest.fixture
+def mock_specter2_modal():
+    """Patch the SPECTER2 Modal call to return deterministic 768-d vectors."""
+    import hashlib
+    def _fake(title_abstract_pairs):
+        out = []
+        for pair in title_abstract_pairs:
+            seed = int(hashlib.md5(
+                (pair["title"] + pair["abstract"]).encode("utf-8")
+            ).hexdigest(), 16) % (2**32)
+            import random
+            r = random.Random(seed)
+            out.append([r.random() for _ in range(768)])
+        return out
+
+    with patch("app.worker.modal_client.specter2_embed_batch", new=AsyncMock(side_effect=_fake)) as m:
+        yield m
+
+
+@pytest.fixture
+def mock_marker_modal():
+    """Patch Marker to return a short canned markdown."""
+    canned = "# Stub paper\n\nThis is a canned Marker output used in tests.\n"
+    with patch("app.worker.modal_client.marker_extract_pdf", new=AsyncMock(return_value=canned)) as m:
+        yield m
+
+
+@pytest.fixture
+def test_user_cookie():
+    """Generate a valid JWT cookie for a test user UUID."""
+    import uuid
+    from app.core.security import create_access_token
+    uid = uuid.uuid4()
+    return {
+        "user_id": uid,
+        "cookie": {"access_token": create_access_token(uid)},
+    }
+
+
+@pytest.fixture
+def seeded_papers():
+    """Deterministic small set of arXiv paper dicts."""
+    return [
+        {
+            "id": "2605.01100",
+            "title": "Multi-Agent Reinforcement Learning at Scale",
+            "abstract": "We study coordination across LLM-driven agents in long-horizon tasks.",
+            "authors": ["A. One"],
+            "published_at": datetime(2026, 5, 12, tzinfo=timezone.utc),
+            "pdf_url": "http://arxiv.org/pdf/2605.01100v1",
+            "source_url": "http://arxiv.org/abs/2605.01100",
+        },
+        {
+            "id": "2605.01101",
+            "title": "Crop Rotation Yield Models",
+            "abstract": "Twenty-year field trial review of crop rotation in Scandinavia.",
+            "authors": ["B. Two"],
+            "published_at": datetime(2026, 5, 12, tzinfo=timezone.utc),
+            "pdf_url": "http://arxiv.org/pdf/2605.01101v1",
+            "source_url": "http://arxiv.org/abs/2605.01101",
+        },
+    ]
