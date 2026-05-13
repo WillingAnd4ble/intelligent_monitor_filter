@@ -235,7 +235,7 @@ def _run_pipeline(
                 # ── 2. Validate prerequisites ──────────────────────────
                 if not user_settings or not user_settings.distilled_criteria:
                     logger.warning(f"[pipeline:{user_id[:8]}] ABORTING — no distilled_criteria")
-                    return
+                    return phase1_accepted_count, phase2_count, top_pick_count
 
                 # Load feedback memory
                 fm_result = await session.execute(
@@ -336,7 +336,7 @@ def _run_pipeline(
 
                 if not phase1_results:
                     logger.info(f"[pipeline:{user_id[:8]}] No papers passed Phase 1, pipeline done")
-                    return
+                    return phase1_accepted_count, phase2_count, top_pick_count
 
                 # ── Light mode short-circuit ──────────────────────────
                 # Persist every accepted paper to feed using the evaluator's
@@ -357,7 +357,7 @@ def _run_pipeline(
                         ))
                     await session.commit()
                     logger.info(f"[pipeline:{user_id[:8]}] Light mode done — {phase1_accepted_count} papers in feed")
-                    return
+                    return phase1_accepted_count, phase2_count, top_pick_count
 
                 _update("Sorting candidates", 55)
                 # ── 5. (full mode) Sort by evaluator score → take top K ──
