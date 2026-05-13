@@ -323,8 +323,13 @@ class TestSettingsValidation:
         ({"notification_time": "not-a-time"}, "notification_time"),
     ])
     async def test_settings_rejects_malformed_fields(self, bad_payload, field):
-        """422 on schema validation failures — no DB hit."""
+        """Bad field values must not be silently saved. Only the int field (deep_scan_limit)
+        triggers a 422 at the Pydantic layer — library_explanation_level and notification_time
+        are `Optional[str]` in SettingsUpdateRequest, so they reach the endpoint and the
+        missing-settings lookup returns 404. Either way: the request was NOT accepted (no 200)."""
         from app.db.database import get_db
+        from app.api.deps import get_current_user as _gcu
+        uid = uuid.uuid4()
         session = AsyncMock()
         rp = MagicMock(); sc = MagicMock(); sc.first.return_value = None
         rp.scalars.return_value = sc
@@ -332,15 +337,18 @@ class TestSettingsValidation:
         async def _gen():
             yield session
         app.dependency_overrides[get_db] = _gen
+        app.dependency_overrides[_gcu] = lambda: _make_fake_user(uid)
         try:
-            uid = uuid.uuid4()
             cookies = _auth_cookie(uid)
             async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test", cookies=cookies) as ac:
                 r = await ac.put("/api/v1/settings/", json=bad_payload)
-            # 422 (schema validation), 401 (auth), or 404 (settings missing) are all acceptable
-            assert r.status_code in (401, 404, 422)
+            assert r.status_code in (404, 422), (
+                f"Bad {field} payload returned {r.status_code}; expected 422 (Pydantic) or 404 (no settings row)"
+            )
+            assert r.status_code != 200, f"Bad {field} value must not be accepted"
         finally:
             app.dependency_overrides.pop(get_db, None)
+            app.dependency_overrides.pop(_gcu, None)
 
     async def test_goal_change_first_run_triggers_full_pipeline_chain(self, eager_celery):
         """When onboarding_completed=False, goal change chains GoalDistiller -> run_full_pipeline."""
@@ -366,20 +374,20 @@ class TestSettingsValidation:
         app.dependency_overrides[get_db] = _gen
         app.dependency_overrides[_gcu] = lambda: fake_user
 
-        with patch("app.worker.celery_app.trigger_goal_distiller.si") as gd_si, \
-             patch("app.worker.celery_app.run_full_pipeline.si") as full_si, \
-             patch("app.worker.celery_app.run_light_pipeline.si") as light_si, \
-             patch("celery.chain") as mock_chain:
-            mock_chain.return_value.apply_async = MagicMock()
-            cookies = _auth_cookie(uid)
-            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test", cookies=cookies) as ac:
-                r = await ac.put("/api/v1/settings/", json={"filtering_goal": "brand new goal"})
-
-        app.dependency_overrides.pop(get_db, None)
-        app.dependency_overrides.pop(_gcu, None)
-        # We don't care about the 200/401 boundary here — we care that the *full* chain was used
-        assert full_si.called, "run_full_pipeline.si should have been queued for first-run user"
-        assert not light_si.called, "run_light_pipeline.si must NOT be queued when onboarding_completed=False"
+        try:
+            with patch("app.worker.celery_app.trigger_goal_distiller.si") as gd_si, \
+                 patch("app.worker.celery_app.run_full_pipeline.si") as full_si, \
+                 patch("app.worker.celery_app.run_light_pipeline.si") as light_si, \
+                 patch("celery.chain") as mock_chain:
+                mock_chain.return_value.apply_async = MagicMock()
+                cookies = _auth_cookie(uid)
+                async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test", cookies=cookies) as ac:
+                    r = await ac.put("/api/v1/settings/", json={"filtering_goal": "brand new goal"})
+                assert full_si.called, "run_full_pipeline.si should have been queued for first-run user"
+                assert not light_si.called, "run_light_pipeline.si must NOT be queued when onboarding_completed=False"
+        finally:
+            app.dependency_overrides.pop(get_db, None)
+            app.dependency_overrides.pop(_gcu, None)
 
     async def test_goal_change_after_onboarding_triggers_light_pipeline_chain(self, eager_celery):
         """When onboarding_completed=True, goal change chains GoalDistiller -> run_light_pipeline."""
@@ -405,19 +413,20 @@ class TestSettingsValidation:
         app.dependency_overrides[get_db] = _gen
         app.dependency_overrides[_gcu] = lambda: fake_user
 
-        with patch("app.worker.celery_app.trigger_goal_distiller.si") as gd_si, \
-             patch("app.worker.celery_app.run_full_pipeline.si") as full_si, \
-             patch("app.worker.celery_app.run_light_pipeline.si") as light_si, \
-             patch("celery.chain") as mock_chain:
-            mock_chain.return_value.apply_async = MagicMock()
-            cookies = _auth_cookie(uid)
-            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test", cookies=cookies) as ac:
-                await ac.put("/api/v1/settings/", json={"filtering_goal": "brand new goal"})
-
-        app.dependency_overrides.pop(get_db, None)
-        app.dependency_overrides.pop(_gcu, None)
-        assert light_si.called, "run_light_pipeline.si should have been queued for onboarded user"
-        assert not full_si.called, "run_full_pipeline.si must NOT be queued when onboarding_completed=True"
+        try:
+            with patch("app.worker.celery_app.trigger_goal_distiller.si") as gd_si, \
+                 patch("app.worker.celery_app.run_full_pipeline.si") as full_si, \
+                 patch("app.worker.celery_app.run_light_pipeline.si") as light_si, \
+                 patch("celery.chain") as mock_chain:
+                mock_chain.return_value.apply_async = MagicMock()
+                cookies = _auth_cookie(uid)
+                async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test", cookies=cookies) as ac:
+                    await ac.put("/api/v1/settings/", json={"filtering_goal": "brand new goal"})
+                assert light_si.called, "run_light_pipeline.si should have been queued for onboarded user"
+                assert not full_si.called, "run_full_pipeline.si must NOT be queued when onboarding_completed=True"
+        finally:
+            app.dependency_overrides.pop(get_db, None)
+            app.dependency_overrides.pop(_gcu, None)
 
 
 # ===== PIPELINE ENDPOINT ====================================================
@@ -441,9 +450,8 @@ class TestPipelineTriggerEndpoint:
                 cookies = _auth_cookie(uid)
                 async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test", cookies=cookies) as ac:
                     r = await ac.post(f"/api/v1/pipeline/trigger?date={bad_date}")
-            # 422 if regex/strptime rejects the date; 404 if settings missing; not 202
-            assert r.status_code in (401, 404, 422, 500)
-            assert r.status_code != 202, f"Bad date {bad_date!r} must not be accepted"
+            # regex on Query() + explicit strptime check both yield 422 — 500 would be a real bug
+            assert r.status_code == 422
         finally:
             app.dependency_overrides.pop(_gcu, None)
 
@@ -461,20 +469,20 @@ class TestPipelineTriggerEndpoint:
         fake_user = _make_fake_user(uid)
         app.dependency_overrides[_gcu] = lambda: fake_user
 
-        with patch("app.api.v1.endpoints.pipeline.AsyncSessionLocal") as ASL, \
-             patch("app.worker.celery_app.run_full_pipeline.delay") as full_delay:
-            ASL.return_value.__aenter__ = AsyncMock(return_value=session)
-            ASL.return_value.__aexit__ = AsyncMock(return_value=None)
-            full_delay.return_value = MagicMock(id="task-abc")
+        try:
+            with patch("app.api.v1.endpoints.pipeline.AsyncSessionLocal") as ASL, \
+                 patch("app.worker.celery_app.run_full_pipeline.delay") as full_delay:
+                ASL.return_value.__aenter__ = AsyncMock(return_value=session)
+                ASL.return_value.__aexit__ = AsyncMock(return_value=None)
+                full_delay.return_value = MagicMock(id="task-abc")
 
-            cookies = _auth_cookie(uid)
-            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test", cookies=cookies) as ac:
-                r = await ac.post("/api/v1/pipeline/trigger?date=2026-05-10")
+                cookies = _auth_cookie(uid)
+                async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test", cookies=cookies) as ac:
+                    r = await ac.post("/api/v1/pipeline/trigger?date=2026-05-10")
 
-        app.dependency_overrides.pop(_gcu, None)
-
-        # 202 if auth wired correctly, 401 if cookie injection didn't take — both still let us assert below
-        if full_delay.called:
-            args, _ = full_delay.call_args
-            assert args[1] == "2026-05-10T00:00:00+00:00"   # since_iso
-            assert args[2].startswith("2026-05-10T23:59:59")  # until_iso
+                if full_delay.called:
+                    args, _ = full_delay.call_args
+                    assert args[1] == "2026-05-10T00:00:00+00:00"   # since_iso
+                    assert args[2].startswith("2026-05-10T23:59:59")  # until_iso
+        finally:
+            app.dependency_overrides.pop(_gcu, None)
