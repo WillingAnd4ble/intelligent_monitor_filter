@@ -109,7 +109,21 @@ htmlcov/
 # ========================
 *.doc
 *.docx
+*.pdf
 ~$*
+
+# ========================
+# Thesis writing artifacts (kept local, not in repo)
+# ========================
+Baigiamasis_darbas_*.md
+architecture_section_draft*.md
+draft_*.md
+THESIS_STATUS.md
+
+# ========================
+# Claude Code workspace
+# ========================
+.claude/
 
 # ========================
 # Misc
