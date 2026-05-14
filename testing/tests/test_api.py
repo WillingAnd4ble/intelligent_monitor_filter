@@ -207,39 +207,9 @@ class TestSettingsEndpoints:
             resp = await client.get("/api/v1/settings/")
         assert resp.status_code == 401
 
-    @pytest.mark.asyncio
-    async def test_put_settings_triggers_distiller_on_goal_change(self):
-        """PUT /api/v1/settings/ with new filtering_goal should trigger GoalDistiller."""
-        fake_user = _make_fake_user()
-        fake_settings = _make_fake_settings(fake_user.id)
-        fake_settings.filtering_goal = "Old goal"
-
-        original = app.dependency_overrides.copy()
-        from app.api.deps import get_current_user
-        from app.db.database import get_db
-        app.dependency_overrides[get_current_user] = lambda: fake_user
-
-        mock_session = AsyncMock()
-        mock_result = MagicMock()
-        mock_result.scalars.return_value.first.return_value = fake_settings
-        mock_session.execute.return_value = mock_result
-
-        app.dependency_overrides[get_db] = lambda: mock_session
-
-        try:
-            with patch("app.worker.celery_app.trigger_goal_distiller") as mock_distiller:
-                mock_distiller.delay = MagicMock()
-
-                transport = ASGITransport(app=app)
-                async with AsyncClient(transport=transport, base_url="http://testserver") as client:
-                    resp = await client.put("/api/v1/settings/", json={
-                        "filtering_goal": "New goal about transformers",
-                    })
-
-                if resp.status_code == 200:
-                    mock_distiller.delay.assert_called_once()
-        finally:
-            app.dependency_overrides = original
+    # NOTE: the goal-change → GoalDistiller → pipeline-chain behaviour is now
+    # covered with the current contract by TestSettingsValidation below
+    # (test_goal_change_first_run_* / test_goal_change_after_onboarding_*).
 
 
 # ---------------------------------------------------------------------------
@@ -248,38 +218,10 @@ class TestSettingsEndpoints:
 
 class TestPipelineEndpoints:
 
-    @pytest.mark.asyncio
-    async def test_trigger_returns_task_id(self):
-        """POST /api/v1/pipeline/trigger should return a task_id."""
-        fake_user = _make_fake_user()
-        fake_settings = _make_fake_settings(fake_user.id)
-
-        original = app.dependency_overrides.copy()
-        from app.api.deps import get_current_user
-        app.dependency_overrides[get_current_user] = lambda: fake_user
-
-        try:
-            with patch("app.api.v1.endpoints.pipeline.AsyncSessionLocal") as MockSession:
-                mock_session = AsyncMock()
-                mock_result = MagicMock()
-                mock_result.scalars.return_value.first.return_value = fake_settings
-                mock_session.execute.return_value = mock_result
-                MockSession.return_value.__aenter__ = AsyncMock(return_value=mock_session)
-                MockSession.return_value.__aexit__ = AsyncMock(return_value=False)
-
-                with patch("app.api.v1.endpoints.pipeline.trigger_agent_discovery") as mock_task:
-                    mock_async_result = MagicMock()
-                    mock_async_result.id = "test-task-id-123"
-                    mock_task.delay.return_value = mock_async_result
-
-                    transport = ASGITransport(app=app)
-                    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
-                        resp = await client.post("/api/v1/pipeline/trigger")
-
-                    assert resp.status_code == 202
-                    assert resp.json()["task_id"] == "test-task-id-123"
-        finally:
-            app.dependency_overrides = original
+    # NOTE: the trigger → task_id behaviour is now covered with the current
+    # contract by TestPipelineTriggerEndpoint below. The pre-cascade test that
+    # patched `trigger_agent_discovery` was removed when that task was renamed
+    # to `run_full_pipeline` during the pipeline split.
 
     @pytest.mark.asyncio
     async def test_pipeline_requires_auth(self):

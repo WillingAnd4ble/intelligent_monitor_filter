@@ -1,11 +1,19 @@
 """
-Unit tests for every agent node in the LangGraph pipeline.
+Unit tests for the agent layer.
 
-Each node is tested in isolation: the LLM is mocked so we only verify
-that the node reads the right state fields and writes the correct output keys.
+Covers the components that exist in the current cascade architecture:
+GoalDistiller, the Phase 1 graph nodes (evaluator, critique) and the
+section-classifier helper used by the library deep-explanation chain.
 
-Mocking strategy: We patch ChatOpenAI at the point of import (app.agents.graph)
-so that the entire prompt|structured chain returns our fake Pydantic output.
+NOTE ON SCOPE: an earlier pre-cascade architecture had separate LangGraph
+nodes for PDF extraction, section classification, explanation and ranking,
+each with its own unit tests. When the pipeline was redesigned into the
+Phase 1 + run_deep_reader() cascade, those nodes were removed and the tests
+that targeted them were deleted along with the architecture they verified.
+This file now tracks only the live agent surface.
+
+Mocking strategy: we patch ChatOpenAI at the point of import so that the
+entire prompt | structured chain returns a fake Pydantic output.
 """
 
 from unittest.mock import patch, MagicMock, PropertyMock
@@ -52,15 +60,20 @@ def _patch_llm_chain(module_path, return_value):
 # ===================================================================
 
 class TestGoalDistiller:
+    """run_goal_distiller returns a DistilledCriteriaOutput carrying both the
+    boolean criteria list and the BM25 lexical_query."""
 
-    def test_returns_list_of_criteria(self):
+    def test_returns_distilled_criteria_output(self):
         from app.agents.distiller import DistilledCriteriaOutput
 
-        fake_output = DistilledCriteriaOutput(distilled_criteria=[
-            "Must feature multi-agent systems",
-            "Must focus on LLMs",
-            "Must include experiments",
-        ])
+        fake_output = DistilledCriteriaOutput(
+            distilled_criteria=[
+                "Must feature multi-agent systems",
+                "Must focus on LLMs",
+                "Must include experiments",
+            ],
+            lexical_query="multi-agent LLM coordination",
+        )
         patcher, mock_chain = _patch_llm_chain("app.agents.distiller.ChatOpenAI", fake_output)
 
         with patcher:
@@ -72,9 +85,10 @@ class TestGoalDistiller:
                 filtering_goal="Find papers on multi-agent LLM coordination",
             )
 
-        assert isinstance(result, list)
-        assert len(result) == 3
-        assert "multi-agent" in result[0].lower()
+        assert isinstance(result, DistilledCriteriaOutput)
+        assert len(result.distilled_criteria) == 3
+        assert "multi-agent" in result.distilled_criteria[0].lower()
+        assert result.lexical_query == "multi-agent LLM coordination"
 
     def test_returns_empty_when_no_goal_or_interest(self):
         from app.agents.distiller import run_goal_distiller
@@ -82,13 +96,15 @@ class TestGoalDistiller:
         result = run_goal_distiller(
             categories=["cs.AI"], topics=[], content_interest=[], filtering_goal=""
         )
-        assert result == []
+        assert result.distilled_criteria == []
+        assert result.lexical_query == ""
 
     def test_criteria_count_within_bounds(self):
         from app.agents.distiller import DistilledCriteriaOutput
 
         fake_output = DistilledCriteriaOutput(
-            distilled_criteria=["C1", "C2", "C3", "C4", "C5"]
+            distilled_criteria=["C1", "C2", "C3", "C4", "C5"],
+            lexical_query="agent systems benchmark",
         )
         patcher, _ = _patch_llm_chain("app.agents.distiller.ChatOpenAI", fake_output)
 
@@ -98,7 +114,7 @@ class TestGoalDistiller:
                 categories=["cs.AI"], topics=["agents"],
                 content_interest=["experiments"], filtering_goal="Agent systems",
             )
-        assert 3 <= len(result) <= 7
+        assert 3 <= len(result.distilled_criteria) <= 7
 
 
 # ===================================================================
@@ -228,57 +244,8 @@ class TestCritiqueNode:
 
 
 # ===================================================================
-# PDF EXTRACTOR NODE
+# SECTION CLASSIFIER (library deep-explanation helper)
 # ===================================================================
-
-class TestPdfExtractorNode:
-
-    @pytest.mark.asyncio
-    async def test_returns_extracted_text_when_pdf_available(self, make_agent_state):
-        from unittest.mock import AsyncMock
-        with patch("app.worker.modal_client.marker_extract_pdf", new_callable=AsyncMock, return_value="Full PDF text here."):
-            from app.agents.graph import node_pdf_extractor
-            result = await node_pdf_extractor(make_agent_state())
-
-        assert result["extracted_pdf_text"] == "Full PDF text here."
-
-    @pytest.mark.asyncio
-    async def test_falls_back_to_abstract_when_extraction_fails(self, make_agent_state):
-        from unittest.mock import AsyncMock
-        with patch("app.worker.modal_client.marker_extract_pdf", new_callable=AsyncMock, return_value=""):
-            from app.agents.graph import node_pdf_extractor
-            state = make_agent_state()
-            result = await node_pdf_extractor(state)
-
-        assert result["extracted_pdf_text"] == state["raw_abstract"]
-
-    @pytest.mark.asyncio
-    async def test_falls_back_to_abstract_when_no_pdf_url(self, make_agent_state):
-        from app.agents.graph import node_pdf_extractor
-
-        state = make_agent_state()
-        state["pdf_url"] = None
-        result = await node_pdf_extractor(state)
-
-        assert result["extracted_pdf_text"] == state["raw_abstract"]
-
-
-# ===================================================================
-# SECTION CLASSIFIER NODE
-# ===================================================================
-
-class TestSectionClassifierNode:
-
-    def test_passthrough_returns_extracted_text(self, make_agent_state):
-        """Current graph.py implementation is a passthrough."""
-        from app.agents.graph import node_section_classifier
-
-        state = make_agent_state()
-        state["extracted_pdf_text"] = "This is the full extracted text."
-        result = node_section_classifier(state)
-
-        assert result["sectioned_text"] == "This is the full extracted text."
-
 
 class TestSectionClassifierLogic:
 
@@ -349,112 +316,3 @@ class TestSectionClassifierLogic:
             result = classify_sections(long_text, ["methodology"])
 
         assert result == long_text
-
-
-# ===================================================================
-# EXPLAINER NODE
-# ===================================================================
-
-class TestExplainerNode:
-
-    def test_returns_explanation_string(self, make_agent_state):
-        from app.agents.schemas import ExplainerOutput
-
-        fake = ExplainerOutput(
-            explanation="This paper proposes a multi-agent framework. "
-                        "It addresses agent communication protocols. "
-                        "Results show SOTA performance."
-        )
-        patcher, _ = _patch_llm_chain("app.agents.graph.ChatOpenAI", fake)
-
-        with patcher:
-            from app.agents.graph import node_explainer
-            state = make_agent_state()
-            state["sectioned_text"] = "Some paper text about agents."
-            result = node_explainer(state)
-
-        assert "final_explanation" in result
-        assert len(result["final_explanation"]) > 20
-
-    def test_uses_sectioned_text_over_abstract(self, make_agent_state):
-        from app.agents.schemas import ExplainerOutput
-
-        fake = ExplainerOutput(explanation="Explanation.")
-        patcher, mock_chain = _patch_llm_chain("app.agents.graph.ChatOpenAI", fake)
-
-        with patcher:
-            from app.agents.graph import node_explainer
-            state = make_agent_state()
-            state["sectioned_text"] = "SECTIONED TEXT"
-            state["raw_abstract"] = "RAW ABSTRACT"
-            node_explainer(state)
-
-        # The rendered prompt should contain the sectioned text, not the abstract
-        prompt_value = mock_chain.invoke.call_args[0][0]
-        prompt_text = str(prompt_value)
-        assert "SECTIONED TEXT" in prompt_text
-        assert "RAW ABSTRACT" not in prompt_text
-
-
-# ===================================================================
-# RANKER NODE
-# ===================================================================
-
-class TestRankerNode:
-
-    def test_returns_float_score(self, make_agent_state):
-        from app.agents.schemas import RankerOutput
-
-        fake = RankerOutput(score=8.5)
-        patcher, _ = _patch_llm_chain("app.agents.graph.ChatOpenAI", fake)
-
-        with patcher:
-            from app.agents.graph import node_ranker
-            state = make_agent_state()
-            state["sectioned_text"] = "Multi-agent paper text."
-            result = node_ranker(state)
-
-        assert "agent_score" in result
-        assert isinstance(result["agent_score"], float)
-        assert 0.0 <= result["agent_score"] <= 10.0
-
-    def test_low_score_for_irrelevant(self, make_agent_state):
-        from app.agents.schemas import RankerOutput
-
-        fake = RankerOutput(score=2.1)
-        patcher, _ = _patch_llm_chain("app.agents.graph.ChatOpenAI", fake)
-
-        with patcher:
-            from app.agents.graph import node_ranker
-            result = node_ranker(make_agent_state(paper=SAMPLE_PAPER_IRRELEVANT))
-
-        assert result["agent_score"] < 5.0
-
-
-# ===================================================================
-# ROUTING LOGIC
-# ===================================================================
-
-class TestRoutingLogic:
-
-    def test_accept_routes_to_pdf_extractor(self):
-        from app.agents.graph import route_evaluator_decision
-        assert route_evaluator_decision({"evaluator_decision": "accept"}) == "pdf_extractor"
-
-    def test_borderline_routes_to_critique(self):
-        from app.agents.graph import route_evaluator_decision
-        assert route_evaluator_decision({"evaluator_decision": "borderline"}) == "critique"
-
-    def test_reject_routes_to_end(self):
-        from langgraph.graph import END
-        from app.agents.graph import route_evaluator_decision
-        assert route_evaluator_decision({"evaluator_decision": "reject"}) == END
-
-    def test_critique_true_routes_to_pdf_extractor(self):
-        from app.agents.graph import route_critique_decision
-        assert route_critique_decision({"critique_decision": True}) == "pdf_extractor"
-
-    def test_critique_false_routes_to_end(self):
-        from langgraph.graph import END
-        from app.agents.graph import route_critique_decision
-        assert route_critique_decision({"critique_decision": False}) == END
