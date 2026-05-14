@@ -1,43 +1,50 @@
-Sprint 2 test-count snapshot — captured 2026-05-13 after Tasks 9-14.
+Test-count snapshot — updated 2026-05-14 after pre-cascade test cleanup.
 
 ==============================================================================
 Non-integration suite (default test run)
 ==============================================================================
 
-Collected total: 92 tests (3 deselected — the @pytest.mark.integration file)
+Collected total: 77 tests — ALL PASSING (3 more behind the @integration marker)
 
 Per-file breakdown (when each file runs alone):
 
-  tests/test_auth.py            ........        8 passed       (Task 10)
-  tests/test_scraper.py         ................ 16 passed     (existing 14 + Task 13 added 2)
-  tests/test_pipeline_modes.py  ......          6 passed       (Task 12)
-  tests/test_retrieval.py       ............    12 passed      (pre-Sprint)
-  tests/test_api.py             21 collected → 19 passed, 2 failed
-  tests/test_agents.py          29 collected → 13 passed, 16 failed
+  tests/test_auth.py            ........        8 passed   (Task 10)
+  tests/test_scraper.py         ................ 16 passed (existing 14 + Task 13 added 2)
+  tests/test_pipeline_modes.py  ......          6 passed   (Task 12)
+  tests/test_retrieval.py       ............    12 passed  (pre-Sprint)
+  tests/test_api.py             19 passed       (existing 8 + Task 11 added 11)
+  tests/test_agents.py          16 passed       (GoalDistiller + Phase 1 nodes + section classifier)
 
 Aggregate (non-integration):
-  PASSED:  74
-  FAILED:  18  (all PRE-EXISTING stale tests, not introduced by Sprint 1 or 2)
+  PASSED:  77
+  FAILED:  0
 
-Stale-test breakdown (the 18 known failures):
-  - test_api.py × 2:
-      TestSettingsEndpoints::test_put_settings_triggers_distiller_on_goal_change
+==============================================================================
+Pre-cascade test cleanup (2026-05-14)
+==============================================================================
+
+An earlier pre-cascade architecture had separate LangGraph nodes for PDF
+extraction, section classification, explanation and ranking. The pipeline was
+later redesigned into the Phase 1 + run_deep_reader() cascade, which removed
+those nodes. The tests that targeted them were left failing until this cleanup.
+
+Removed (15 tests against an architecture that no longer exists):
+  - test_agents.py × 13: TestPdfExtractorNode, TestSectionClassifierNode,
+      TestExplainerNode, TestRankerNode, TestRoutingLogic
+      (node_pdf_extractor / node_explainer / node_ranker / RankerOutput /
+       route_evaluator_decision / route_critique_decision — all removed)
+  - test_api.py × 2: TestSettingsEndpoints::test_put_settings_triggers_distiller_on_goal_change,
       TestPipelineEndpoints::test_trigger_returns_task_id
-    Reason: Sprint 1 rename trigger_agent_discovery → run_full_pipeline left
-    these two old-test mocks pointing at the renamed symbol. Cleanup is a
-    post-thesis follow-up — they don't reflect any current regression.
+      (patched `trigger_agent_discovery`, renamed to `run_full_pipeline` in the
+       pipeline split — behaviour now covered by the Task 11 tests)
 
-  - test_agents.py × 16:
-      TestPdfExtractor, TestSectionClassifier, TestExplainer, TestRanker,
-      TestRoutingLogic (route_critique_decision, accept→pdf_extractor, etc.)
-    Reason: Pre-cascade architecture (separate Evaluator → Critique →
-    PDFExtractor → SectionClassifier → Explainer → Ranker LangGraph nodes).
-    Replaced by Phase 1 + run_deep_reader() cascade in Sprint 1. These tests
-    target an architecture that no longer exists.
-    Same post-thesis cleanup batch as the test_api.py two.
+Fixed (3 tests of a live component against a stale contract):
+  - test_agents.py × 3: TestGoalDistiller — run_goal_distiller now returns a
+      DistilledCriteriaOutput (with a lexical_query field), not a bare list.
+      Tests updated to the current contract; GoalDistiller is live and is the
+      subject of thesis section 4.1.1, so it keeps real coverage.
 
-The 74-pass count and 18-stale split are the "true" picture: every new test
-added in Sprints 1-2 (Tasks 9-14) passes; every failure is a known leftover.
+Net: 92 collected / 74 pass / 18 fail  ->  77 collected / 77 pass / 0 fail.
 
 ==============================================================================
 Integration suite (`-m integration`)
@@ -55,19 +62,19 @@ the whole file via pytest.skip(). Marker also prevents collection in the
 default test run (collected → deselected by `-m "not integration"`).
 
 ==============================================================================
-Notes for Task 18 (Ch4 §4.3 prose)
+For thesis section 4.3
 ==============================================================================
 
 Frame the suite as:
-  - 92 unit/functional tests across 6 modules + 3 integration tests
-  - 74 currently green (every Sprint 1-2 addition passes)
-  - 18 known-stale tests from the pre-cascade architecture, scheduled for
-    a single post-thesis cleanup commit (mention briefly in §4.5 limitations)
+  - 77 unit/functional tests across 6 modules + 3 integration tests, all green
+  - 30 of the 77 were created during this work; the rest were inherited and,
+    where they targeted the pre-cascade architecture, were migrated or removed
+    alongside it (this is the "test suite evolved with the architecture" point)
 
-Sprint 2 additions specifically:
-  - Task 10: test_auth.py             — 8 tests   (register / login / logout)
-  - Task 11: test_api.py extensions   — 11 tests  (settings + pipeline trigger)
-  - Task 12: test_pipeline_modes.py   — 6 tests   (light/full mode regression)
-  - Task 13: test_scraper.py windowed — 2 tests   (since/until query encoding)
-  - Task 14: test_celery_integration  — 3 tests   (real Redis broker)
-  Total new: 30 tests across 5 commits.
+Tests created during this work:
+  - test_auth.py             — 8 tests   (register / login / logout)
+  - test_api.py extensions   — 11 tests  (settings validation + pipeline chain)
+  - test_pipeline_modes.py   — 6 tests   (light/full mode regression)
+  - test_scraper.py windowed — 2 tests   (since/until query encoding)
+  - test_celery_integration  — 3 tests   (real Redis broker)
+  Total new: 30 tests.
