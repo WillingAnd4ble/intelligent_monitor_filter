@@ -215,7 +215,20 @@ def _run_pipeline(
         phase2_count = 0
         top_pick_count = 0
 
+        def _stage_log(stage_name: str, t0: float) -> float:
+            """Emit a structured pipeline.stage telemetry line and return a fresh monotonic mark."""
+            logger.info(json.dumps({
+                "event": "pipeline.stage",
+                "user_id": user_id,
+                "mode": mode,
+                "stage": stage_name,
+                "duration_ms": int((time.monotonic() - t0) * 1000),
+                "ts": time.time(),
+            }))
+            return time.monotonic()
+
         try:
+            t_stage = time.monotonic()
             async with SessionLocal() as session:
                 # ── 0. Load user settings ──────────────────────────────
                 _update("Loading settings", 5)
@@ -231,6 +244,7 @@ def _run_pipeline(
                 logger.info(f"[pipeline:{user_id[:8]}] Fetched {len(papers)} papers, ingesting...")
                 _update("Ingesting papers", 15)
                 await ingest_papers(session, papers)
+                t_stage = _stage_log("scrape", t_stage)
 
                 # ── 2. Validate prerequisites ──────────────────────────
                 if not user_settings or not user_settings.distilled_criteria:
@@ -266,6 +280,7 @@ def _run_pipeline(
                     limit=30,
                 )
                 logger.info(f"[pipeline:{user_id[:8]}] RRF returned {len(candidates)} candidates")
+                t_stage = _stage_log("rrf", t_stage)
 
                 # ── 4. Phase 1: Evaluator + Critique (abstract-only) ──
                 _update("Phase 1: Evaluating abstracts", 30)
@@ -333,6 +348,7 @@ def _run_pipeline(
                 await session.commit()
                 phase1_accepted_count = len(phase1_results)
                 logger.info(f"[pipeline:{user_id[:8]}] Phase 1 complete — {phase1_accepted_count} accepted")
+                t_stage = _stage_log("phase1", t_stage)
 
                 if not phase1_results:
                     logger.info(f"[pipeline:{user_id[:8]}] No papers passed Phase 1, pipeline done")
@@ -402,6 +418,7 @@ def _run_pipeline(
                 logger.info(f"[pipeline:{user_id[:8]}] Starting parallel Marker extraction for {len(top_k)} papers...")
                 markdown_results = await asyncio.gather(*[extract_pdf(c) for c, _ in top_k])
                 logger.info(f"[pipeline:{user_id[:8]}] Marker extraction complete")
+                t_stage = _stage_log("marker", t_stage)
 
                 # ── 7. Phase 2: parallel Deep Reader ───────────────────
                 async def deep_read(markdown_text, cand_data, eval_state):
@@ -427,6 +444,7 @@ def _run_pipeline(
                     for md, (cand, state) in zip(markdown_results, top_k)
                 ])
                 logger.info(f"[pipeline:{user_id[:8]}] Deep Reader complete")
+                t_stage = _stage_log("deep_reader", t_stage)
 
                 _update("Saving results", 90)
                 # ── 8. Save results + select top 3 picks ──────────────
@@ -521,6 +539,7 @@ def _run_pipeline(
                     ]
                     notify_top_picks(notify_email, top_papers_data)
                     logger.info(f"[pipeline:{user_id[:8]}] Notification sent to {notify_email}")
+                t_stage = _stage_log("notify", t_stage)
 
         except Exception as e:
             logger.error(f"[pipeline:{user_id[:8]}] TASK FAILED: {e}", exc_info=True)
