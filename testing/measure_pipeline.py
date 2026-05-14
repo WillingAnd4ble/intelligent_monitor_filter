@@ -82,15 +82,17 @@ class WorkerLogTail:
     def seek_to_end(self):
         self._fh.seek(0, 2)
 
-    def wait_for_pipeline_end(self, mode: str, timeout_s: float) -> dict:
+    def wait_for_pipeline_end(self, mode: str, timeout_s: float) -> tuple[dict, list[dict]]:
         """Block until a `pipeline.end` event with the given mode appears.
 
-        Returns the parsed event dict (includes duration_ms). Raises TimeoutError
-        if nothing matching shows up within timeout_s. A `pipeline.skipped_locked`
-        event for the same mode is treated as a hard error (the run never started).
+        Returns (end_event, stage_events) where end_event includes duration_ms and
+        stage_events is the list of pipeline.stage events seen between start and end.
+        Raises TimeoutError if nothing matching shows up within timeout_s. A
+        `pipeline.skipped_locked` event for the same mode is a hard error.
         """
         deadline = time.monotonic() + timeout_s
         saw_start = False
+        stage_events: list[dict] = []
         while time.monotonic() < deadline:
             line = self._fh.readline()
             if not line:
@@ -101,6 +103,9 @@ class WorkerLogTail:
                 continue
             if evt["event"] == "pipeline.start" and evt.get("mode") == mode:
                 saw_start = True
+                stage_events = []
+            elif evt["event"] == "pipeline.stage" and evt.get("mode") == mode and saw_start:
+                stage_events.append(evt)
             elif evt["event"] == "pipeline.skipped_locked" and evt.get("mode") == mode:
                 raise RuntimeError(
                     f"pipeline.skipped_locked for mode={mode} — a previous run for "
@@ -110,7 +115,7 @@ class WorkerLogTail:
                 if not saw_start:
                     # An end without a matching start we saw — likely a stale line; keep going.
                     continue
-                return evt
+                return evt, stage_events
         raise TimeoutError(
             f"No pipeline.end for mode={mode} within {timeout_s:.0f}s. "
             f"Check the worker is running and pointed at the same Redis."
@@ -148,10 +153,10 @@ def put_goal(client: httpx.Client, goal: str, *, first_time: bool) -> None:
 
 def measure_one_user(
     client: httpx.Client, tail: WorkerLogTail, run_index: int
-) -> tuple[dict, dict]:
+) -> tuple[dict, list[dict], dict, list[dict]]:
     """Drive one fresh user through a full cycle then a light cycle.
 
-    Returns (full_event, light_event), each the parsed pipeline.end dict.
+    Returns (full_end, full_stages, light_end, light_stages).
     """
     email = f"perf_{int(time.time())}_{run_index}_{uuid.uuid4().hex[:6]}@test.local"
     password = "perf-measure-123"
@@ -162,7 +167,7 @@ def measure_one_user(
     print(f"  [run {run_index}] setting goal A -> expecting FULL cycle")
     tail.seek_to_end()
     put_goal(client, GOAL_A, first_time=True)
-    full_evt = tail.wait_for_pipeline_end("full", CYCLE_TIMEOUT_S)
+    full_evt, full_stages = tail.wait_for_pipeline_end("full", CYCLE_TIMEOUT_S)
     full_s = full_evt["duration_ms"] / 1000.0
     print(
         f"  [run {run_index}] FULL done in {full_s:.1f}s "
@@ -174,7 +179,7 @@ def measure_one_user(
     print(f"  [run {run_index}] changing goal to B -> expecting LIGHT cycle")
     tail.seek_to_end()
     put_goal(client, GOAL_B, first_time=False)
-    light_evt = tail.wait_for_pipeline_end("light", CYCLE_TIMEOUT_S)
+    light_evt, light_stages = tail.wait_for_pipeline_end("light", CYCLE_TIMEOUT_S)
     light_s = light_evt["duration_ms"] / 1000.0
     print(
         f"  [run {run_index}] LIGHT done in {light_s:.1f}s "
@@ -183,7 +188,7 @@ def measure_one_user(
 
     # Clear the cookie so the next run starts from a clean client.
     client.cookies.clear()
-    return full_evt, light_evt
+    return full_evt, full_stages, light_evt, light_stages
 
 
 def summarise(label: str, durations_s: list[float]) -> str:
@@ -232,6 +237,8 @@ def main() -> int:
     full_durations: list[float] = []
     light_durations: list[float] = []
     raw_rows: list[str] = []
+    # stage name -> list of per-run durations in seconds (from full-mode runs)
+    stage_durations: dict[str, list[float]] = {}
 
     print(f"Measuring {args.runs} run(s) against {args.base_url}")
     print(f"Watching worker log: {args.worker_log}\n")
@@ -239,7 +246,9 @@ def main() -> int:
     with httpx.Client(base_url=args.base_url, timeout=30.0) as client:
         for i in range(1, args.runs + 1):
             try:
-                full_evt, light_evt = measure_one_user(client, tail, i)
+                full_evt, full_stages, light_evt, light_stages = measure_one_user(
+                    client, tail, i
+                )
             except (TimeoutError, RuntimeError, httpx.HTTPError) as e:
                 print(f"  [run {i}] ABORTED: {e}", file=sys.stderr)
                 tail.close()
@@ -253,11 +262,18 @@ def main() -> int:
             light_s = light_evt["duration_ms"] / 1000.0
             full_durations.append(full_s)
             light_durations.append(light_s)
+            # Per-stage breakdown from the full-mode run (it exercises every stage).
+            for st in full_stages:
+                stage_durations.setdefault(st["stage"], []).append(
+                    st["duration_ms"] / 1000.0
+                )
             raw_rows.append(
                 f"run {i}: full={full_s:.1f}s "
                 f"(p1={full_evt.get('phase1_count')}, p2={full_evt.get('phase2_count')}, "
                 f"top={full_evt.get('top_pick_count')})  |  "
-                f"light={light_s:.1f}s (p1={light_evt.get('phase1_count')})"
+                f"light={light_s:.1f}s (p1={light_evt.get('phase1_count')})  |  "
+                f"full stages: "
+                + ", ".join(f"{s['stage']}={s['duration_ms']/1000.0:.1f}s" for s in full_stages)
             )
             print()
 
@@ -266,6 +282,19 @@ def main() -> int:
     full_med = statistics.median(full_durations)
     light_med = statistics.median(light_durations)
     ratio = full_med / light_med if light_med else float("nan")
+
+    # Per-stage medians, in the canonical pipeline order.
+    stage_order = ["scrape", "rrf", "phase1", "marker", "deep_reader", "notify"]
+    stage_lines = []
+    for st in stage_order:
+        if st in stage_durations:
+            vals = stage_durations[st]
+            med = statistics.median(vals)
+            unit = f"{med*1000:.0f} ms" if med < 1.0 else f"{med:.1f} s"
+            stage_lines.append(
+                f"  {st:12s} median={unit:>10s}  "
+                f"(raw: {', '.join(f'{v:.2f}s' for v in vals)})"
+            )
 
     lines = [
         f"Pipeline timing summary — Task 16 — N={args.runs} runs",
@@ -280,6 +309,11 @@ def main() -> int:
         f"full median is ~{ratio:.1f}x the light median",
         "",
         "=" * 70,
+        "STAGE BREAKDOWN — full-mode runs (use these for section 4.4.2)",
+        "=" * 70,
+        *stage_lines,
+        "",
+        "=" * 70,
         "RAW PER-RUN DATA",
         "=" * 70,
         *raw_rows,
@@ -290,10 +324,8 @@ def main() -> int:
         f"  4.4.1 full median    = {full_med/60:.2f} min "
         f"(range {min(full_durations)/60:.2f}-{max(full_durations)/60:.2f} min)",
         f"  4.4.1 full/light ratio = ~{ratio:.1f}x",
-        "  4.4.2 stage breakdown is NOT captured here — the worker log only emits",
-        "        whole-cycle duration. For per-stage numbers, read the worker log's",
-        "        per-stage INFO lines (Fetching ArXiv / Phase 1 / Marker / etc.)",
-        "        manually, or leave 4.4.2 <N> placeholders for a follow-up.",
+        "  4.4.2 stage medians are in the STAGE BREAKDOWN block above. The 'notify'",
+        "        bucket also includes the result-save loop + top-pick selection.",
         "  4.2 references two <N> cycle-time mentions — use the full median for the",
         "      first-run mention (4.2.1) and the light median for the goal-change",
         "      mention (4.2.2).",
