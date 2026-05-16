@@ -9,10 +9,9 @@ IMPORTANT: The auth router is mounted at `/auth` in this codebase (not /api/v1/a
 That inconsistency is a known issue scheduled for post-thesis cleanup; do not
 "fix" it by changing the prefix in tests.
 
-NOTE: LoginRequest.email is typed as plain `str` (not EmailStr), so Pydantic
-does NOT enforce email format — a string like "not-an-email" passes validation.
-The 422 tests therefore target truly missing required fields (email or password),
-not format violations.
+NOTE: LoginRequest.email is typed as `EmailStr`, so Pydantic enforces
+format. The 422 tests cover both missing required fields AND malformed
+email format.
 """
 
 import uuid
@@ -97,9 +96,8 @@ class TestRegister:
         assert r.status_code == 400
         assert "currently utilized" in r.json()["detail"]
 
-    async def test_malformed_email_returns_422(self):
-        # LoginRequest.email is plain str, so format alone won't trigger 422.
-        # A fully missing email field (omitted from JSON) IS a validation error → 422.
+    async def test_missing_email_returns_422(self):
+        """A fully missing email field is a Pydantic required-field error."""
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
             r = await ac.post("/auth/register", json={
                 "password": "password-123",
@@ -112,6 +110,24 @@ class TestRegister:
                 "email": "ok@example.com",
             })
         assert r.status_code == 422
+
+    @pytest.mark.parametrize("bad_email", [
+        pytest.param("not-an-email", id="no-at-sign"),
+        pytest.param("@example.com", id="missing-local-part"),
+        pytest.param("user@", id="missing-domain"),
+        pytest.param("user@nodot", id="missing-tld"),
+        pytest.param("user name@example.com", id="space-in-local-part"),
+        pytest.param("", id="empty-string"),
+    ])
+    async def test_malformed_email_returns_422(self, bad_email):
+        """EmailStr must reject these at the Pydantic layer — applies to both register and login."""
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+            r = await ac.post("/auth/register", json={
+                "email": bad_email,
+                "password": "password-123",
+            })
+        assert r.status_code == 422, f"Bad email {bad_email!r} returned {r.status_code}; expected 422"
+        assert "email" in r.text.lower(), f"422 body should reference email; got: {r.text}"
 
 
 # ===== LOGIN ================================================================
