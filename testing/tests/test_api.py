@@ -15,8 +15,9 @@ from httpx import AsyncClient, ASGITransport
 # We need the FastAPI app
 from app.main import app
 from app.db.models import User, UserSettings, UserPaper, Paper, FeedbackMemory
-
-
+from app.core.security import create_access_token
+from app.db.database import get_db
+from app.db.database import get_db
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -47,7 +48,6 @@ def _make_fake_settings(user_id):
 
 def _auth_cookie(user_id):
     """Generate a valid JWT cookie for test requests."""
-    from app.core.security import create_access_token
     token = create_access_token(user_id)
     return {"access_token": token}
 
@@ -81,6 +81,9 @@ class TestAuthEndpoints:
         fake_user = _make_fake_user()
 
         mock_session = AsyncMock()
+        # session.add() is synchronous in SQLAlchemy — override the default
+        # AsyncMock so calls don't produce un-awaited coroutines.
+        mock_session.add = MagicMock()
         # First execute: check existing user → None
         # Subsequent executes: flush/commit are on the session directly
         mock_result = MagicMock()
@@ -88,7 +91,7 @@ class TestAuthEndpoints:
         mock_session.execute.return_value = mock_result
 
         original = app.dependency_overrides.copy()
-        from app.db.database import get_db
+        
         app.dependency_overrides[get_db] = lambda: mock_session
 
         try:
@@ -155,8 +158,8 @@ class TestFeedEndpoints:
 
             try:
                 transport = ASGITransport(app=app)
-                async with AsyncClient(transport=transport, base_url="http://testserver") as client:
-                    resp = await client.get("/api/v1/feed/", cookies=cookies)
+                async with AsyncClient(transport=transport, base_url="http://testserver", cookies=cookies) as client:
+                    resp = await client.get("/api/v1/feed/")
                 assert resp.status_code == 200
                 assert isinstance(resp.json(), list)
             finally:
@@ -169,7 +172,7 @@ class TestFeedEndpoints:
 
         original = app.dependency_overrides.copy()
         from app.api.deps import get_current_user
-        from app.db.database import get_db
+        
         app.dependency_overrides[get_current_user] = lambda: fake_user
 
         mock_session = AsyncMock()
@@ -259,16 +262,51 @@ class TestSettingsValidation:
         finally:
             app.dependency_overrides.pop(get_db, None)
 
+    # NOTE: library_explanation_level is still `Optional[str]` with no pattern in the
+    # schema, so it has no Pydantic-level validation — known gap, future work.
     @pytest.mark.parametrize("bad_payload, field", [
-        ({"library_explanation_level": "invalid-level"}, "library_explanation_level"),
-        ({"deep_scan_limit": "not-a-number"}, "deep_scan_limit"),
-        ({"notification_time": "not-a-time"}, "notification_time"),
+        # notification_time: pattern ^([01]\d|2[0-3]):[0-5]\d$  (HH:MM, 24-hour)
+        pytest.param({"notification_time": "not-a-time"}, "notification_time",
+                     id="notification_time=not-a-time"),
+        pytest.param({"notification_time": "25:00"}, "notification_time",
+                     id="notification_time=25:00-hour-out-of-range"),
+        pytest.param({"notification_time": "12:60"}, "notification_time",
+                     id="notification_time=12:60-minute-out-of-range"),
+        pytest.param({"notification_time": "9:30"}, "notification_time",
+                     id="notification_time=9:30-missing-leading-zero"),
+        # deep_scan_limit: ge=1, le=50
+        pytest.param({"deep_scan_limit": "not-a-number"}, "deep_scan_limit",
+                     id="deep_scan_limit=not-a-number"),
+        pytest.param({"deep_scan_limit": 0}, "deep_scan_limit",
+                     id="deep_scan_limit=0-below-min"),
+        pytest.param({"deep_scan_limit": -5}, "deep_scan_limit",
+                     id="deep_scan_limit=-5-negative"),
+        pytest.param({"deep_scan_limit": 51}, "deep_scan_limit",
+                     id="deep_scan_limit=51-above-max"),
+        pytest.param({"deep_scan_limit": 9999}, "deep_scan_limit",
+                     id="deep_scan_limit=9999-extreme"),
     ])
     async def test_settings_rejects_malformed_fields(self, bad_payload, field):
-        """Bad field values must not be silently saved. Only the int field (deep_scan_limit)
-        triggers a 422 at the Pydantic layer — library_explanation_level and notification_time
-        are `Optional[str]` in SettingsUpdateRequest, so they reach the endpoint and the
-        missing-settings lookup returns 404. Either way: the request was NOT accepted (no 200)."""
+        """Pydantic must reject these payloads at the schema layer — strict 422, never 200.
+        The endpoint body is never executed, so no DB/settings mock is needed."""
+        from app.api.deps import get_current_user as _gcu
+        uid = uuid.uuid4()
+        app.dependency_overrides[_gcu] = lambda: _make_fake_user(uid)
+        try:
+            cookies = _auth_cookie(uid)
+            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test", cookies=cookies) as ac:
+                r = await ac.put("/api/v1/settings/", json=bad_payload)
+            assert r.status_code == 422, (
+                f"Bad {field} payload returned {r.status_code}; expected 422 from Pydantic. Body: {r.text}"
+            )
+            # Sanity: the 422 must actually mention the bad field, not some other validation error
+            assert field in r.text, f"422 body should reference field {field!r}; got: {r.text}"
+        finally:
+            app.dependency_overrides.pop(_gcu, None)
+
+    async def test_settings_accepts_valid_time_and_limit(self):
+        """Positive case: valid notification_time + deep_scan_limit must pass Pydantic.
+        We hit the 404 (no settings row) — that proves Pydantic let the body through."""
         from app.db.database import get_db
         from app.api.deps import get_current_user as _gcu
         uid = uuid.uuid4()
@@ -283,11 +321,12 @@ class TestSettingsValidation:
         try:
             cookies = _auth_cookie(uid)
             async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test", cookies=cookies) as ac:
-                r = await ac.put("/api/v1/settings/", json=bad_payload)
-            assert r.status_code in (404, 422), (
-                f"Bad {field} payload returned {r.status_code}; expected 422 (Pydantic) or 404 (no settings row)"
-            )
-            assert r.status_code != 200, f"Bad {field} value must not be accepted"
+                r = await ac.put("/api/v1/settings/", json={
+                    "notification_time": "08:30",
+                    "deep_scan_limit": 10,
+                })
+            # Pydantic passed → endpoint ran → 404 because settings row is mocked as None
+            assert r.status_code == 404, f"Valid payload should pass Pydantic; got {r.status_code}: {r.text}"
         finally:
             app.dependency_overrides.pop(get_db, None)
             app.dependency_overrides.pop(_gcu, None)

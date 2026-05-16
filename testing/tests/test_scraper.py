@@ -12,8 +12,9 @@ import pytest
 from freezegun import freeze_time
 
 from conftest import SAMPLE_ARXIV_XML
-
-
+from app.worker.arxiv_scraper import default_daily_window_utc
+from app.worker.arxiv_scraper import fetch_arxiv_papers
+import app.worker.arxiv_scraper as scraper
 # ---------------------------------------------------------------------------
 # default_daily_window_utc — weekday / weekend window logic
 # ---------------------------------------------------------------------------
@@ -23,28 +24,24 @@ class TestDefaultDailyWindowUtc:
 
     @freeze_time("2026-05-13 09:00:00")  # Wednesday
     def test_weekday_returns_yesterday_window(self):
-        from app.worker.arxiv_scraper import default_daily_window_utc
         since, until = default_daily_window_utc()
         assert since == datetime(2026, 5, 12, 0, 0, 0, tzinfo=timezone.utc)
         assert until == datetime(2026, 5, 12, 23, 59, 59, tzinfo=timezone.utc)
 
     @freeze_time("2026-05-15 09:00:00")  # Friday
-    def test_friday_returns_thursday_window(self):
-        from app.worker.arxiv_scraper import default_daily_window_utc
+    def test_friday_returns_thursday_window(self): 
         since, until = default_daily_window_utc()
         assert since == datetime(2026, 5, 14, 0, 0, 0, tzinfo=timezone.utc)
         assert until == datetime(2026, 5, 14, 23, 59, 59, tzinfo=timezone.utc)
 
     @freeze_time("2026-05-18 09:00:00")  # Monday
     def test_monday_returns_friday_through_sunday_window(self):
-        from app.worker.arxiv_scraper import default_daily_window_utc
         since, until = default_daily_window_utc()
         assert since == datetime(2026, 5, 15, 0, 0, 0, tzinfo=timezone.utc)   # Fri 00:00
         assert until == datetime(2026, 5, 17, 23, 59, 59, tzinfo=timezone.utc)  # Sun 23:59:59
 
     @freeze_time("2026-05-16 09:00:00")  # Saturday
     def test_saturday_returns_friday_window(self):
-        from app.worker.arxiv_scraper import default_daily_window_utc
         since, until = default_daily_window_utc()
         # Sat morning: yesterday was Friday — just take Friday's window
         assert since == datetime(2026, 5, 15, 0, 0, 0, tzinfo=timezone.utc)
@@ -52,13 +49,12 @@ class TestDefaultDailyWindowUtc:
 
     @freeze_time("2026-05-17 09:00:00")  # Sunday
     def test_sunday_returns_friday_through_saturday_window(self):
-        from app.worker.arxiv_scraper import default_daily_window_utc
+        
         since, until = default_daily_window_utc()
         assert since == datetime(2026, 5, 15, 0, 0, 0, tzinfo=timezone.utc)   # Fri 00:00
         assert until == datetime(2026, 5, 16, 23, 59, 59, tzinfo=timezone.utc)  # Sat 23:59:59
 
     def test_accepts_explicit_now_override(self):
-        from app.worker.arxiv_scraper import default_daily_window_utc
         now = datetime(2026, 5, 13, 9, 0, 0, tzinfo=timezone.utc)  # Wednesday
         since, until = default_daily_window_utc(now)
         assert since == datetime(2026, 5, 12, 0, 0, 0, tzinfo=timezone.utc)
@@ -80,7 +76,7 @@ class TestFetchArxivPapers:
         mock_response.read.return_value = SAMPLE_ARXIV_XML.encode("utf-8")
         mock_urlopen.return_value = mock_response
 
-        from app.worker.arxiv_scraper import fetch_arxiv_papers
+        
         papers = fetch_arxiv_papers("cat:cs.AI", max_results=10)
 
         assert len(papers) == 2
@@ -101,7 +97,6 @@ class TestFetchArxivPapers:
         mock_response.read.return_value = SAMPLE_ARXIV_XML.encode("utf-8")
         mock_urlopen.return_value = mock_response
 
-        from app.worker.arxiv_scraper import fetch_arxiv_papers
         papers = fetch_arxiv_papers()
 
         for p in papers:
@@ -114,7 +109,6 @@ class TestFetchArxivPapers:
         """If ArXiv is unreachable, return [] instead of crashing."""
         mock_urlopen.side_effect = Exception("Connection refused")
 
-        from app.worker.arxiv_scraper import fetch_arxiv_papers
         papers = fetch_arxiv_papers()
 
         assert papers == []
@@ -127,7 +121,6 @@ class TestFetchArxivPapers:
         mock_response.read.return_value = SAMPLE_ARXIV_XML.encode("utf-8")
         mock_urlopen.return_value = mock_response
 
-        from app.worker.arxiv_scraper import fetch_arxiv_papers
         fetch_arxiv_papers("cat:cs.AI+OR+cat:cs.LG", max_results=50)
 
         call_args = mock_urlopen.call_args
@@ -155,7 +148,6 @@ class TestFetchArxivPapers:
         mock_response.read.return_value = xml_no_pdf.encode("utf-8")
         mock_urlopen.return_value = mock_response
 
-        from app.worker.arxiv_scraper import fetch_arxiv_papers
         papers = fetch_arxiv_papers()
 
         assert len(papers) == 1
@@ -171,7 +163,7 @@ class TestArxivRateLimiting:
 
     def test_throttle_enforces_minimum_delay(self):
         """Consecutive calls should be spaced by at least _ARXIV_DELAY_SECONDS."""
-        import app.worker.arxiv_scraper as scraper
+        
 
         original_time = scraper._last_arxiv_request_time
 
@@ -218,6 +210,7 @@ class TestIngestPapers:
     async def test_inserts_new_papers_with_embeddings(self):
         """New papers should be inserted and get SPECTER2 embeddings."""
         mock_session = AsyncMock()
+        mock_session.add = MagicMock()  # SQLAlchemy session.add() is synchronous
         mock_session.get.return_value = None  # paper doesn't exist
 
         fake_embedding = [0.1] * 768
@@ -254,7 +247,6 @@ class TestFetchArxivPapersWithWindow:
     @patch("app.worker.arxiv_scraper._fetch_and_parse", return_value=[])
     @patch("app.worker.arxiv_scraper._throttle_arxiv")
     def test_passes_since_until_into_query(self, throttle, mock_fetch):
-        from app.worker.arxiv_scraper import fetch_arxiv_papers
         since = datetime(2026, 5, 12, 0, 0, 0, tzinfo=timezone.utc)
         until = datetime(2026, 5, 12, 23, 59, 59, tzinfo=timezone.utc)
         fetch_arxiv_papers("cat:cs.AI", since=since, until=until)
@@ -268,7 +260,6 @@ class TestFetchArxivPapersWithWindow:
     @patch("app.worker.arxiv_scraper._fetch_and_parse", return_value=[])
     @patch("app.worker.arxiv_scraper._throttle_arxiv")
     def test_legacy_mode_no_since_until_uses_max_results(self, throttle, mock_fetch):
-        from app.worker.arxiv_scraper import fetch_arxiv_papers
         fetch_arxiv_papers("cat:cs.AI", max_results=42)
         url = mock_fetch.call_args_list[0][0][0]
         assert "max_results=42" in url

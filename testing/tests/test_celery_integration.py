@@ -25,6 +25,15 @@ import time
 import uuid
 from contextlib import contextmanager
 from unittest.mock import patch, AsyncMock, MagicMock
+from app.core import config as cfg
+from app.worker.celery_app import celery_app
+from app.worker.celery_app import _user_pipeline_lock
+from app.worker.celery_app import _user_pipeline_lock
+from app.worker.celery_app import (
+        celery_app,
+        trigger_goal_distiller,
+        run_full_pipeline,
+    )
 
 import pytest
 
@@ -54,11 +63,11 @@ def redis_broker():
 @pytest.fixture
 def redirected_settings(redis_broker, monkeypatch):
     """Point app.core.config.settings.REDIS_URL at the testcontainer."""
-    from app.core import config as cfg
+    
     monkeypatch.setattr(cfg.settings, "REDIS_URL", redis_broker)
     # The celery_app module captured REDIS_URL at import time — push it onto the
     # Celery app too so freshly created tasks/locks pick it up.
-    from app.worker.celery_app import celery_app
+    
     monkeypatch.setattr(celery_app.conf, "broker_url", redis_broker)
     monkeypatch.setattr(celery_app.conf, "result_backend", redis_broker)
     return redis_broker
@@ -66,7 +75,7 @@ def redirected_settings(redis_broker, monkeypatch):
 
 def test_lock_prevents_concurrent_full_runs(redirected_settings):
     """Two simultaneous _user_pipeline_lock acquisitions for the same user — second is denied."""
-    from app.worker.celery_app import _user_pipeline_lock
+    
 
     uid = str(uuid.uuid4())
 
@@ -87,7 +96,7 @@ def test_lock_prevents_concurrent_full_runs(redirected_settings):
 
 def test_different_users_get_independent_locks(redirected_settings):
     """The lock is keyed on user_id — two distinct users may run concurrently."""
-    from app.worker.celery_app import _user_pipeline_lock
+   
 
     uid_a = str(uuid.uuid4())
     uid_b = str(uuid.uuid4())
@@ -126,12 +135,7 @@ def test_chain_routes_through_real_broker(redirected_settings):
     What we verify is that the chain dispatches, runs, and produces a result back through
     the result backend — i.e. the broker round-trip is real.
     """
-    from app.worker.celery_app import (
-        celery_app,
-        trigger_goal_distiller,
-        run_full_pipeline,
-    )
-
+  
     # Mock everything _run_pipeline and trigger_goal_distiller actually touch.
     # All targets are the SOURCE modules because both Celery tasks import locally.
     fake_session = AsyncMock()
