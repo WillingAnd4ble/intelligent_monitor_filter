@@ -24,8 +24,8 @@ from httpx import AsyncClient, ASGITransport
 from app.main import app
 from app.db.database import get_db
 from app.db.models import User, UserSettings, FeedbackMemory
-
-
+from app.core.security import get_password_hash
+from app.core.security import get_password_hash
 def _make_session_mock(existing_user_email: str | None = None):
     """Return an AsyncMock session whose .execute().scalars().first() returns a User if email matches."""
     session = AsyncMock()
@@ -119,7 +119,7 @@ class TestRegister:
 class TestLogin:
 
     async def test_happy_path(self, override_db_factory):
-        from app.core.security import get_password_hash
+        
         session = AsyncMock()
         u = MagicMock(spec=User)
         u.id = uuid.uuid4()
@@ -143,7 +143,6 @@ class TestLogin:
         assert "access_token" in r.cookies
 
     async def test_wrong_password_returns_401(self, override_db_factory):
-        from app.core.security import get_password_hash
         session = AsyncMock()
         u = MagicMock(spec=User)
         u.id = uuid.uuid4()

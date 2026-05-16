@@ -16,8 +16,8 @@ class SettingsUpdateRequest(BaseModel):
     content_interest: Optional[List[str]] = None
     library_explanation_level: Optional[str] = None
     notification_email: Optional[str] = None
-    notification_time: Optional[str] = None
-    deep_scan_limit: Optional[int] = None
+    notification_time: Optional[str] = Field(None, pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
+    deep_scan_limit: Optional[int] = Field(None, ge=1, le=15)
     pdf_parser_mode: Optional[str] = None
 
 class PaperResponse(BaseModel):

@@ -18,7 +18,7 @@ async def trigger_pipeline(
     date: str | None = Query(
         None,
         description="Optional YYYY-MM-DD — fetch papers from that UTC day instead of the default window.",
-        regex=r"^\d{4}-\d{2}-\d{2}$",
+        pattern=r"^\d{4}-\d{2}-\d{2}$",
     ),
 ):
     """Run the full pipeline now. Chain GoalDistiller first if criteria are missing."""
