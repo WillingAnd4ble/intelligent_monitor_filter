@@ -162,24 +162,36 @@ class TestArxivRateLimiting:
     """Tests for the _throttle_arxiv rate limiter."""
 
     def test_throttle_enforces_minimum_delay(self):
-        """Consecutive calls should be spaced by at least _ARXIV_DELAY_SECONDS."""
-        
+        """Consecutive calls should be spaced by at least _ARXIV_DELAY_SECONDS.
 
+        Setup pins _last_arxiv_request_time to "now", so the next call MUST
+        sleep. The assertion is unconditional on purpose — a passing test that
+        only checks sleep duration *if* sleep was called would stay green even
+        if the throttle were silently removed.
+        """
         original_time = scraper._last_arxiv_request_time
 
-        # Simulate a recent request
+        # Simulate a request that happened just now — the throttle has no slack.
         scraper._last_arxiv_request_time = time.monotonic()
 
-        with patch("app.worker.arxiv_scraper.time.sleep") as mock_sleep:
-            scraper._throttle_arxiv()
-            # Should have called sleep since we just "made a request"
-            if mock_sleep.called:
+        try:
+            with patch("app.worker.arxiv_scraper.time.sleep") as mock_sleep:
+                scraper._throttle_arxiv()
+                # Throttle MUST call time.sleep — if it doesn't, the rate
+                # limiter has been bypassed and we'd hammer arXiv.
+                mock_sleep.assert_called_once()
                 sleep_duration = mock_sleep.call_args[0][0]
-                assert sleep_duration > 0
-                assert sleep_duration <= scraper._ARXIV_DELAY_SECONDS
-
-        # Restore
-        scraper._last_arxiv_request_time = original_time
+                assert sleep_duration > 0, (
+                    f"Throttle should sleep for a positive duration; got {sleep_duration}"
+                )
+                assert sleep_duration <= scraper._ARXIV_DELAY_SECONDS, (
+                    f"Sleep {sleep_duration}s exceeds configured delay "
+                    f"{scraper._ARXIV_DELAY_SECONDS}s"
+                )
+        finally:
+            # Restore even if the assertion fails, so subsequent tests aren't
+            # affected by a pinned _last_arxiv_request_time.
+            scraper._last_arxiv_request_time = original_time
 
 
 # ---------------------------------------------------------------------------

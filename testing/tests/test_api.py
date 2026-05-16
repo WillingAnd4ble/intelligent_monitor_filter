@@ -292,9 +292,9 @@ class TestSettingsValidation:
         pytest.param({"notification_email": "not-an-email"}, "notification_email",
                      id="notification_email=not-an-email"),
         pytest.param({"notification_email": "missing@tld"}, "notification_email",
-                     id="notification_email=missing-tld"),
+                     id="notification_email=missing@tld"),
         pytest.param({"notification_email": "@example.com"}, "notification_email",
-                     id="notification_email=missing-local-part"),
+                     id="notification_email=@example.com"),
     ])
     async def test_settings_rejects_malformed_fields(self, bad_payload, field):
         """Pydantic must reject these payloads at the schema layer — strict 422, never 200.
