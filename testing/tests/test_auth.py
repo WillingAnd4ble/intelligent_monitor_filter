@@ -112,11 +112,11 @@ class TestRegister:
         assert r.status_code == 422
 
     @pytest.mark.parametrize("bad_email", [
-        pytest.param("not-an-email", id="no-at-sign"),
-        pytest.param("@example.com", id="missing-local-part"),
-        pytest.param("user@", id="missing-domain"),
-        pytest.param("user@nodot", id="missing-tld"),
-        pytest.param("user name@example.com", id="space-in-local-part"),
+        pytest.param("not-an-email", id="not-an-email"),
+        pytest.param("@example.com", id="@example.com"),
+        pytest.param("user@", id="user@"),
+        pytest.param("user@nodot", id="user@nodot"),
+        pytest.param("user name@example.com", id="user_name@example.com-has-space"),
         pytest.param("", id="empty-string"),
     ])
     async def test_malformed_email_returns_422(self, bad_email):
@@ -203,3 +203,47 @@ class TestLogout:
         cookie_header = r.headers.get("set-cookie", "")
         assert "access_token=" in cookie_header
         assert ("Max-Age=0" in cookie_header) or ("expires=" in cookie_header.lower())
+
+    async def test_protected_route_rejects_after_logout(self, override_db_factory):
+        """End-to-end logout check: after /auth/logout the client cookie jar drops
+        access_token, so a subsequent request to a protected route returns 401.
+        This closes the loop on the Set-Cookie deletion header — proves the
+        deletion actually takes effect from the user's perspective, not just
+        that the server emitted the right header."""
+        session = AsyncMock()
+        u = MagicMock(spec=User)
+        u.id = uuid.uuid4()
+        u.email = "logout-test@example.com"
+        u.password_hash = get_password_hash("password-123")
+        result_proxy = MagicMock()
+        scalars = MagicMock()
+        scalars.first.return_value = u
+        result_proxy.scalars.return_value = scalars
+        session.execute = AsyncMock(return_value=result_proxy)
+        override_db_factory(session)
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+            # 1. Log in — server sets the access_token cookie in the client jar
+            login = await ac.post("/auth/login", json={
+                "email": "logout-test@example.com",
+                "password": "password-123",
+            })
+            assert login.status_code == 200
+            assert "access_token" in ac.cookies, \
+                "Login should populate the client cookie jar with access_token"
+
+            # 2. Log out — server sends Set-Cookie with Max-Age=0; an
+            # RFC-compliant client drops the cookie from its jar.
+            logout = await ac.post("/auth/logout")
+            assert logout.status_code == 200
+            assert "access_token" not in ac.cookies, \
+                "After /auth/logout the client jar must no longer contain access_token"
+
+            # 3. Same client, no cookie attached — protected route must reject.
+            # 401 happens in get_current_user before any DB lookup, so no extra
+            # mocking is needed here.
+            after = await ac.get("/api/v1/feed/")
+            assert after.status_code == 401, (
+                f"After logout, GET /api/v1/feed/ must return 401; got {after.status_code}. "
+                "If this returns 200, the cookie deletion did not actually take effect."
+            )
