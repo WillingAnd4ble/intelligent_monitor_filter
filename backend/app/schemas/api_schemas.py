@@ -1,8 +1,8 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, EmailStr, Field
 from typing import List, Literal, Optional
 
 class LoginRequest(BaseModel):
-    email: str
+    email: EmailStr
     password: str
 
 class StatusResponse(BaseModel):
@@ -14,8 +14,8 @@ class SettingsUpdateRequest(BaseModel):
     authors: Optional[List[str]] = None
     filtering_goal: Optional[str] = None
     content_interest: Optional[List[str]] = None
-    library_explanation_level: Optional[str] = None
-    notification_email: Optional[str] = None
+    library_explanation_level: Optional[Literal["professional", "student", "kid"]] = None
+    notification_email: Optional[EmailStr] = None
     notification_time: Optional[str] = Field(None, pattern=r"^([01]\d|2[0-3]):[0-5]\d$")
     deep_scan_limit: Optional[int] = Field(None, ge=1, le=15)
     pdf_parser_mode: Optional[str] = None
@@ -37,7 +37,7 @@ class FeedStatsResponse(BaseModel):
     recommended_today: int = 0
 
 class RejectRequest(BaseModel):
-    comment: str = Field(..., description="Required constraint explicitly feeding the Memory agent")
+    comment: str = Field(..., min_length=1, description="Required constraint explicitly feeding the Memory agent")
 
 class ExplanationResponse(BaseModel):
     user_paper_id: str
