@@ -99,22 +99,44 @@ class TestGoalDistiller:
         assert result.distilled_criteria == []
         assert result.lexical_query == ""
 
-    def test_criteria_count_within_bounds(self):
+    def test_distiller_prompt_specifies_3_to_7_criteria_bound(self):
+        """The 3-7 criteria bound is enforced via the LLM prompt, not Python
+        post-processing. Verify the bound is present in the prompt sent to the
+        model — if a future edit drops or changes it, this test catches the
+        contract violation. (The previous version of this test asserted the
+        bound on the mock output, which was a tautology: mocking 5 criteria
+        and asserting 3 ≤ 5 ≤ 7 told us nothing about the system.)
+        """
+        import re
         from app.agents.distiller import DistilledCriteriaOutput
 
-        fake_output = DistilledCriteriaOutput(
-            distilled_criteria=["C1", "C2", "C3", "C4", "C5"],
-            lexical_query="agent systems benchmark",
+        fake = DistilledCriteriaOutput(
+            distilled_criteria=["C1"], lexical_query=""
         )
-        patcher, _ = _patch_llm_chain("app.agents.distiller.ChatOpenAI", fake_output)
+        patcher, mock_chain = _patch_llm_chain("app.agents.distiller.ChatOpenAI", fake)
 
         with patcher:
             from app.agents.distiller import run_goal_distiller
-            result = run_goal_distiller(
+            run_goal_distiller(
                 categories=["cs.AI"], topics=["agents"],
                 content_interest=["experiments"], filtering_goal="Agent systems",
             )
-        assert 3 <= len(result.distilled_criteria) <= 7
+
+        assert mock_chain.invoke.called, "Distiller never invoked the LLM chain"
+        prompt_text = str(mock_chain.invoke.call_args[0][0])
+
+        # Accept any reasonable rendering of the bound: "3-7", "3 - 7",
+        # "3 to 7", "between 3 and 7", "3–7", "3—7". Whichever the prompt
+        # author picked, the two numbers must appear together as a range.
+        has_bound = bool(
+            re.search(r"\b3\s*[-–—]\s*7\b", prompt_text)
+            or re.search(r"\b3\s+(?:to|and)\s+7\b", prompt_text, re.IGNORECASE)
+        )
+        assert has_bound, (
+            f"Distiller prompt must specify the 3-7 criteria bound to the LLM. "
+            f"Searched for '3-7', '3 to 7', 'between 3 and 7' etc. in the rendered "
+            f"prompt and found none. First 500 chars of prompt:\n{prompt_text[:500]}"
+        )
 
 
 # ===================================================================

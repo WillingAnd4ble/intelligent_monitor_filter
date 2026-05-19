@@ -50,14 +50,71 @@ def _docker_available() -> bool:
 
 @pytest.fixture(scope="module")
 def redis_broker():
-    """A real Redis container; yields the redis:// URL string."""
+    """A real Redis container; yields the redis:// URL string.
+
+    Implementation notes:
+      - We use the generic `DockerContainer` + explicit `wait_for_logs` instead
+        of `testcontainers.redis.RedisContainer`. RedisContainer internally
+        applies an `@wait_container_is_ready` decorator at import time, which
+        testcontainers itself has deprecated; importing it emits a
+        DeprecationWarning every run. Going through the generic API bypasses
+        the deprecated module entirely (no warning) and is the migration path
+        the library recommends.
+      - Teardown ordering matters: we close Celery's connection pool BEFORE
+        the container stops. Otherwise the in-process Celery client (singleton,
+        alive for the whole pytest session) notices the broker died and
+        triggers its default reconnect-retry loop, spamming the terminal with
+        20× `Connection to Redis lost: Retry (N/20)` lines for ~1-2 minutes
+        after the tests have already PASSED. The conf overrides disable the
+        retry loop; `gc.collect()` forces pending AsyncResult.__del__ to run
+        while the broker is alive; `celery_app.close()` releases pool
+        connections cleanly.
+    """
     if not _docker_available():
         pytest.skip("Docker not available — integration tests require testcontainers")
-    from testcontainers.redis import RedisContainer
-    with RedisContainer("redis:7-alpine") as redis:
-        url = f"redis://{redis.get_container_host_ip()}:{redis.get_exposed_port(6379)}/0"
+
+    from testcontainers.core.container import DockerContainer
+    # Newer testcontainers exposes wait strategies under .wait_strategies;
+    # older versions under .waiting_utils. Try both, prefer the newer.
+    try:
+        from testcontainers.core.wait_strategies import LogMessageWaitStrategy
+    except ImportError:
+        from testcontainers.core.waiting_utils import LogMessageWaitStrategy
+
+    # Disable broker reconnect storms during teardown.
+    celery_app.conf.broker_connection_retry = False
+    celery_app.conf.broker_connection_retry_on_startup = False
+    celery_app.conf.broker_connection_max_retries = 0
+
+    container = (
+        DockerContainer("redis:7-alpine")
+        .with_exposed_ports(6379)
+        .waiting_for(LogMessageWaitStrategy("Ready to accept connections"))
+    )
+    container.start()
+    try:
+        host = container.get_container_host_ip()
+        port = container.get_exposed_port(6379)
+        url = f"redis://{host}:{port}/0"
         os.environ["REDIS_URL"] = url
-        yield url
+        try:
+            yield url
+        finally:
+            # Force any pending AsyncResult.__del__ to run NOW, while the
+            # broker is still alive. Without this, the chain-test AsyncResults
+            # are garbage-collected at process shutdown — by which time the
+            # broker is dead, and their __del__ raises ConnectionRefusedError
+            # trying to unsubscribe from the pubsub channel.
+            import gc
+            gc.collect()
+            # Close Celery's connection pool while the broker is still alive,
+            # so we don't trigger reconnect attempts when the container stops.
+            try:
+                celery_app.close()
+            except Exception:
+                pass
+    finally:
+        container.stop()
 
 
 @pytest.fixture
@@ -132,10 +189,20 @@ def test_chain_routes_through_real_broker(redirected_settings):
     """trigger_goal_distiller → run_full_pipeline executes against a real broker.
 
     Heavy I/O surfaces are patched so the worker can complete without DB/Modal/network.
-    What we verify is that the chain dispatches, runs, and produces a result back through
-    the result backend — i.e. the broker round-trip is real.
+    What we verify:
+      1. The chain dispatches, both tasks are consumed by the worker, and results
+         flow back through the result backend (the broker round-trip is real).
+      2. BOTH chain steps actually executed — not just the final one. This catches
+         a class of regressions where the first task silently failed or the chain
+         linking broke, leaving the second task as a no-op while the test stayed
+         green on the loose `final is None or isinstance(...)` check.
+
+    The two-step verification uses Celery's own result tracking — the AsyncResult
+    returned from chain().apply_async() corresponds to the last task; its `.parent`
+    attribute is the AsyncResult of the previous task. If both .successful() are
+    True, both tasks reached completion via the broker.
     """
-  
+
     # Mock everything _run_pipeline and trigger_goal_distiller actually touch.
     # All targets are the SOURCE modules because both Celery tasks import locally.
     fake_session = AsyncMock()
@@ -164,7 +231,39 @@ def test_chain_routes_through_real_broker(redirected_settings):
                 run_full_pipeline.si(uid),
             ).apply_async()
 
-            # The chain should complete (no settings → pipeline aborts early but cleanly).
-            # We just verify the round-trip — the result is None or a counts tuple.
+            # 1. Round-trip: the chain should complete. With no settings, the
+            # pipeline aborts cleanly — result is None or a counts tuple.
             final = result.get(timeout=30)
-            assert final is None or isinstance(final, (list, tuple))
+            assert final is None or isinstance(final, (list, tuple)), (
+                f"Unexpected final result type: {type(final).__name__} = {final!r}"
+            )
+
+            # 2. BOTH chain steps executed. result.parent is the AsyncResult of
+            # the first task (trigger_goal_distiller); result itself is for the
+            # second task (run_full_pipeline). Without these checks, the test
+            # would stay green even if the first task silently failed or the
+            # chain only had one task.
+            assert result.parent is not None, (
+                "chain().apply_async() returned an AsyncResult without a parent — "
+                "the chain was not built with two linked tasks"
+            )
+
+            parent_value = result.parent.get(timeout=5)
+            assert result.parent.successful(), (
+                f"First chain step (trigger_goal_distiller) did not succeed: "
+                f"state={result.parent.state}, value={parent_value!r}"
+            )
+            assert result.successful(), (
+                f"Second chain step (run_full_pipeline) did not succeed: "
+                f"state={result.state}, value={final!r}"
+            )
+
+            # Defense in depth — explicitly drop the AsyncResults so their
+            # __del__ runs (or becomes a no-op) here, while the broker is
+            # alive, not at process shutdown when Redis is dead.
+            try:
+                if result.parent is not None:
+                    result.parent.forget()
+                result.forget()
+            except Exception:
+                pass
