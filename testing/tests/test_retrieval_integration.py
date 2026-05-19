@@ -10,7 +10,7 @@ Why this exists:
   tests stay green because they only know about the Python copy.
 
   This file closes that gap by:
-    1. Spinning up `pgvector/pgvector:pg16` via testcontainers.
+    1. Spinning up `pgvector/pgvector:pg18` via testcontainers.
     2. Creating the `papers` table (id, title, abstract, embedding vector(768),
        search_vector tsvector, ...) matching the production schema.
     3. Seeding 4 controlled papers chosen so that the rank order under correct
@@ -71,7 +71,7 @@ def pgvector_url():
         pytest.skip("Docker not available — integration tests require testcontainers")
     from testcontainers.postgres import PostgresContainer
     with PostgresContainer(
-        image="pgvector/pgvector:pg16",
+        image="pgvector/pgvector:pg18",
         driver="asyncpg",
     ) as pg:
         url = pg.get_connection_url()

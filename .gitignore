@@ -138,3 +138,5 @@ testing/data/labels/
 testing/data/results/
 testing/data/markdown/
 testing/.env.benchmark
+# Database backups (local migration artifacts)
+backend/db_backups/

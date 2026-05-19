@@ -1,8 +1,6 @@
-version: '3.8'
-
 services:
   db:
-    image: pgvector/pgvector:pg15
+    image: pgvector/pgvector:pg18
     container_name: arxiv_postgres
     environment:
       POSTGRES_USER: postgres
@@ -11,7 +9,10 @@ services:
     ports:
       - "5433:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      # PG 18+ uses /var/lib/postgresql (not /var/lib/postgresql/data) so it
+      # can place data in a major-version-specific subdir (e.g. .../18/) and
+      # support pg_upgrade --link cleanly. See docker-library/postgres#1259.
+      - postgres_data:/var/lib/postgresql
     restart: unless-stopped
 
   redis:
