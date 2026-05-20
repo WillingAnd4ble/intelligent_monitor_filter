@@ -10,6 +10,10 @@ psycopg2-binary>=2.9.9
 alembic>=1.13.1
 pgvector>=0.2.5
 
+# Lexical retrieval (BM25, Snowball stemmer)
+rank-bm25>=0.2.2
+nltk>=3.8
+
 # Auth
 pyjwt[crypto]>=2.8.0
 passlib[bcrypt]>=1.7.4
