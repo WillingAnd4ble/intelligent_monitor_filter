@@ -322,8 +322,7 @@ export function TerminalClient() {
                 Notification email
               </h3>
               <p className="mt-1 text-sm text-ink-muted">
-                Top-pick papers (score ≥ 7.0) will be sent to this email after
-                each pipeline run.
+                Recommendations will be sent to this email overlooking your topic each day 
               </p>
               <input
                 type="email"

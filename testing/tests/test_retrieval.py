@@ -62,30 +62,50 @@ class TestRRFScoreFormula:
 # ---------------------------------------------------------------------------
 # perform_hybrid_rrf_search — query contract
 # ---------------------------------------------------------------------------
+#
+# After the ts_rank_cd -> rank_bm25 migration, perform_hybrid_rrf_search runs
+# TWO separate SQL executions per call:
+#   1. semantic CTE: pgvector cosine, top-N
+#   2. lexical filter: tsvector @@ tsquery boolean filter
+# BM25 scoring + RRF fusion happen in Python. Mocks below mirror that with
+# `side_effect=[sem_result, lex_result]` so the first await returns the
+# semantic-side rows, the second returns the lexical-side rows.
+
+def _mock_result(rows):
+    """Build a result-proxy mock whose .mappings().fetchall() returns `rows`."""
+    rp = MagicMock()
+    rp.mappings.return_value.fetchall.return_value = rows
+    return rp
+
 
 class TestHybridRRFSearch:
     """Tests for app.db.retrieval.perform_hybrid_rrf_search."""
 
     @pytest.mark.asyncio
     async def test_returns_list_of_dicts(self):
-        """The function must return a list of dicts, each with id, title, abstract."""
+        """Returns list of dicts with id, title, abstract, rrf_score; sorted by RRF score desc."""
         mock_session = AsyncMock()
 
-        # Simulate DB returning 2 rows as mappings
-        mock_row_1 = {
-            "id": "2404.12345", "title": "Paper A", "abstract": "Abstract A",
+        # Paper A appears in both legs -> highest RRF score.
+        # Paper B appears in semantic only -> lower score.
+        sem_row_a = {
+            "id": "2404.12345", "title": "Multi-agent paper",
+            "abstract": "We propose multi-agent coordination via LLMs.",
             "authors": '["Auth1"]', "pdf_url": "http://...", "source_url": "http://...",
-            "published_at": None, "rrf_score": 0.033,
+            "published_at": None,
         }
-        mock_row_2 = {
-            "id": "2404.67890", "title": "Paper B", "abstract": "Abstract B",
+        sem_row_b = {
+            "id": "2404.67890", "title": "Quantum bounds",
+            "abstract": "Entanglement bounds in lattice systems.",
             "authors": '["Auth2"]', "pdf_url": None, "source_url": "http://...",
-            "published_at": None, "rrf_score": 0.020,
+            "published_at": None,
         }
+        lex_row_a = sem_row_a  # A also matches the lexical filter
 
-        mock_result = MagicMock()
-        mock_result.mappings.return_value.fetchall.return_value = [mock_row_1, mock_row_2]
-        mock_session.execute.return_value = mock_result
+        mock_session.execute = AsyncMock(side_effect=[
+            _mock_result([sem_row_a, sem_row_b]),  # semantic leg
+            _mock_result([lex_row_a]),              # lexical leg (only A)
+        ])
 
         from app.db.retrieval import perform_hybrid_rrf_search
         results = await perform_hybrid_rrf_search(
@@ -97,16 +117,20 @@ class TestHybridRRFSearch:
 
         assert isinstance(results, list)
         assert len(results) == 2
+        # A appears in both legs -> wins
         assert results[0]["id"] == "2404.12345"
         assert results[0]["rrf_score"] > results[1]["rrf_score"]
+        # rrf_score now computed in Python (not returned by SQL); must be present
+        assert all("rrf_score" in r for r in results)
 
     @pytest.mark.asyncio
     async def test_passes_embedding_as_vector_string(self):
-        """The embedding must be formatted as a pgvector-compatible string '[0.1,0.2,...]'."""
+        """The embedding must reach the SEMANTIC leg as a pgvector-compatible string."""
         mock_session = AsyncMock()
-        mock_result = MagicMock()
-        mock_result.mappings.return_value.fetchall.return_value = []
-        mock_session.execute.return_value = mock_result
+        mock_session.execute = AsyncMock(side_effect=[
+            _mock_result([]),  # semantic
+            _mock_result([]),  # lexical
+        ])
 
         from app.db.retrieval import perform_hybrid_rrf_search
         test_embedding = [0.5, -0.3, 0.1]  # short for testing
@@ -117,38 +141,48 @@ class TestHybridRRFSearch:
             limit=5,
         )
 
-        # Check that execute was called and the embedding param is a vector string
-        call_args = mock_session.execute.call_args
-        params = call_args[0][1]  # second positional arg = bind params
-        assert params["embedding_val"] == "[0.5,-0.3,0.1]"
+        # The FIRST execute call is the semantic leg — that's where the
+        # embedding bind param lives. (Lexical leg only takes :query_text.)
+        first_call_params = mock_session.execute.call_args_list[0][0][1]
+        assert first_call_params["embedding_val"] == "[0.5,-0.3,0.1]"
 
     @pytest.mark.asyncio
     async def test_respects_limit_parameter(self):
-        """The LIMIT in the query should match what was passed in."""
+        """LIMIT is bound on the semantic SQL and final output is capped at `limit`."""
         mock_session = AsyncMock()
-        mock_result = MagicMock()
-        mock_result.mappings.return_value.fetchall.return_value = []
-        mock_session.execute.return_value = mock_result
+        # Return 5 semantic rows; with limit=2 final output must trim to 2.
+        sem_rows = [
+            {"id": f"p{i}", "title": f"T{i}", "abstract": f"A{i}",
+             "authors": "[]", "pdf_url": None, "source_url": None, "published_at": None}
+            for i in range(5)
+        ]
+        mock_session.execute = AsyncMock(side_effect=[
+            _mock_result(sem_rows),
+            _mock_result([]),  # no lexical match
+        ])
 
         from app.db.retrieval import perform_hybrid_rrf_search
-        await perform_hybrid_rrf_search(
+        results = await perform_hybrid_rrf_search(
             session=mock_session,
             query_text="test",
             query_embedding=[0.0] * 768,
-            limit=25,
+            limit=2,
         )
 
-        call_args = mock_session.execute.call_args
-        params = call_args[0][1]
-        assert params["limit"] == 25
+        # Semantic execute must have received the limit
+        sem_call_params = mock_session.execute.call_args_list[0][0][1]
+        assert sem_call_params["limit"] == 2
+        # And final output is trimmed to the same cap
+        assert len(results) == 2
 
     @pytest.mark.asyncio
     async def test_returns_empty_on_no_matches(self):
-        """When neither search leg finds anything, return an empty list."""
+        """When neither leg returns rows, the function returns an empty list."""
         mock_session = AsyncMock()
-        mock_result = MagicMock()
-        mock_result.mappings.return_value.fetchall.return_value = []
-        mock_session.execute.return_value = mock_result
+        mock_session.execute = AsyncMock(side_effect=[
+            _mock_result([]),  # semantic empty
+            _mock_result([]),  # lexical empty
+        ])
 
         from app.db.retrieval import perform_hybrid_rrf_search
         results = await perform_hybrid_rrf_search(
@@ -158,6 +192,52 @@ class TestHybridRRFSearch:
         )
 
         assert results == []
+
+    @pytest.mark.asyncio
+    async def test_bm25_assigns_lexical_ranks(self):
+        """A lexical-only candidate (no semantic match) must still get a
+        non-zero rrf_score, which proves BM25 actually ran in the lexical leg.
+
+        We avoid asserting a specific BM25 ordering here on purpose — with a
+        corpus this small, BM25's IDF term goes negative for any query token
+        present in every document (log((N-df+0.5)/(df+0.5)) < 0 when df is
+        close to N), which can invert intuitive rankings. The integration
+        tests at tests/test_retrieval_integration.py exercise BM25 ordering
+        with a real PostgreSQL corpus that doesn't have this degeneracy.
+
+        What this unit test does check: with one lexical-only paper, lexical
+        rank is 1 by enumeration, semantic_ranks is empty, so the final
+        rrf_score must equal exactly 1/(rrf_k_lexical + 1) = 1/61 ≈ 0.01639.
+        If BM25 (or the ranking loop) were skipped, the lexical rank dict
+        would stay empty and rrf_score would be 0.
+        """
+        mock_session = AsyncMock()
+        lex_paper = {
+            "id": "lex_only", "title": "Multi-agent coordination",
+            "abstract": "Cooperating agents collaborate via natural language.",
+            "authors": "[]", "pdf_url": None, "source_url": None, "published_at": None,
+        }
+        mock_session.execute = AsyncMock(side_effect=[
+            _mock_result([]),            # semantic empty -> no semantic_rank
+            _mock_result([lex_paper]),   # one lexical-only candidate
+        ])
+
+        from app.db.retrieval import perform_hybrid_rrf_search
+        results = await perform_hybrid_rrf_search(
+            session=mock_session,
+            query_text="agent",
+            query_embedding=[0.0] * 768,
+            limit=10,
+            rrf_k_lexical=60,  # explicit so the assertion below is unambiguous
+        )
+
+        assert len(results) == 1
+        assert results[0]["id"] == "lex_only"
+        # Rank 1 in lexical, no semantic contribution -> RRF score must be 1/61.
+        assert results[0]["rrf_score"] == pytest.approx(1.0 / 61, rel=1e-9), (
+            "BM25 must assign the lexical-only candidate rank 1, yielding "
+            f"rrf_score = 1/(60+1); got {results[0]['rrf_score']}"
+        )
 
 
 # ---------------------------------------------------------------------------
