@@ -2,8 +2,8 @@
 # Always pause on exit so we can read errors
 trap 'echo; echo "[Celery exited with code $? — press enter to close]"; read' EXIT
 
-cd "/c/Users/Work/Documents/Studie/Intelligent_filter/Building_planning_station/backend"
-source "/c/Users/Work/Documents/Studie/Intelligent_filter/Building_planning_station/.venv/Scripts/activate"
+cd "/c/Users/Work/documents/studie/intelligent_filter/building_planning_station/backend"
+source "/c/Users/Work/documents/studie/intelligent_filter/building_planning_station/.venv/Scripts/activate"
 
 # Wait for Redis to be reachable (docker-compose may still be warming up)
 echo "==> Waiting for Redis on localhost:6379..."

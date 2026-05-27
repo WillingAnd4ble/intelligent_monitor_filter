@@ -10,7 +10,7 @@ from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from app.agents.schemas import AgentState, EvaluatorOutput, CritiqueOutput
 from app.core.config import settings
-
+from app.agents.schemas import DeepReaderOutput
 
 def node_evaluator(state: AgentState):
     """Pointwise evaluator: abstract + distilled_criteria → decision + score + user_explanation."""
@@ -129,8 +129,6 @@ async def run_deep_reader(markdown: str, distilled_criteria: list, feedback_memo
 
     Returns dict with keys: decision, score, explanation.
     """
-    from app.agents.schemas import DeepReaderOutput
-
     llm = ChatOpenAI(
         model="gpt-4o-mini",
         temperature=0.3,
