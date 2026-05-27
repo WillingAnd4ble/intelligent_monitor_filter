@@ -480,7 +480,7 @@ def _run_pipeline(
 
                 phase2_count = len(top_k)
 
-                # Mark top 3 as top picks (only if score >= 7.0)
+                # Mark top 3 as top picks (currently 7)
                 TOP_PICK_MIN_SCORE = 7.0
                 feed_papers.sort(key=lambda x: x[2], reverse=True)
                 for up, cand, score in feed_papers[:3]:

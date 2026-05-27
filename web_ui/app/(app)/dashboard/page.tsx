@@ -40,6 +40,17 @@ export default function DashboardPage() {
     [],
   );
 
+  // Defensive re-ordering: Recommended (top picks) first, then by score
+  // descending. The backend already sorts this way, but applying it here
+  // keeps the feed correct regardless of API order.
+  const sortedPapers = useMemo(() => {
+    if (!papers) return papers;
+    return [...papers].sort((a, b) => {
+      if (a.is_top_pick !== b.is_top_pick) return a.is_top_pick ? -1 : 1;
+      return (b.agent_score ?? -Infinity) - (a.agent_score ?? -Infinity);
+    });
+  }, [papers]);
+
   const acceptMut = useMutation({
     mutationFn: acceptPaper,
     onSuccess: () => {
@@ -122,7 +133,7 @@ export default function DashboardPage() {
       )}
 
       <div className="flex flex-col gap-7">
-        {papers?.map((p) => (
+        {sortedPapers?.map((p) => (
           <PaperCard
             key={p.user_paper_id}
             paper={p}

@@ -23,7 +23,11 @@ async def get_feed(
         .join(Paper, UserPaper.paper_id == Paper.id)
         .where(UserPaper.user_id == user.id)
         .where(UserPaper.status == "feed")
-        .order_by(UserPaper.created_at.desc())
+        .order_by(
+            UserPaper.is_top_pick.desc().nullslast(),  # Recommended block first
+            UserPaper.agent_score.desc().nullslast(),  # then highest grade
+            UserPaper.created_at.desc(),               # stable tie-breaker
+        )
         .limit(50)
     )
     
